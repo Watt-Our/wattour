@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "wattour-optimization"
+version = "0.1.0"
+description = "Internal Watt-Our package for optimization methods"
+authors = ["Alex Tseng <134972440+alexrtseng@users.noreply.github.com>"]
+license = "Proprietary"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pandas = "^2.2.3"
+setuptools = "^75.3.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
