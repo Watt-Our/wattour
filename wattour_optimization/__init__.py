@@ -68,6 +68,7 @@ def optimize_battery_control(battery: Battery, lmps: pd.DataFrame, initial_soc=0
         return {
             "status_num": model.Status,
             "message": "Problem solved optimally",
+            "objective_value": model.objVal,
             "runtime": end_time - start_time,
             "charge_values": charge_values,
             "discharge_values": discharge_values,
