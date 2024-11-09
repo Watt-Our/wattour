@@ -26,13 +26,13 @@ def optimize_battery_control(battery: Battery, lmps: pd.DataFrame, initial_soc=0
     model = gp.Model("Battery Control Optimizer")
 
     # Variables
-    c = model.addVars(t_steps)  # Charging at each time step (in energy)
-    d = model.addVars(t_steps)  # Discharging at each time step (in energy)
-    s = model.addVars(t_steps + 1)  # State of charge at each time step (in energy units)
+    c = model.addVars(t_steps - 1)  # Charging at each time step (in energy)
+    d = model.addVars(t_steps - 1)  # Discharging at each time step (in energy)
+    s = model.addVars(t_steps)  # State of charge at each time step (in energy units)
 
     # Maximizing the profit
     model.setObjective(
-        gp.quicksum(lmps['lmp'][t] * (d[t] - c[t]) for t in range(t_steps)), GRB.MAXIMIZE 
+        gp.quicksum(lmps['lmp'][t] * (d[t - 1] - c[t - 1] * lmps['time_step_duration'][t]) for t in range(1, t_steps)), GRB.MAXIMIZE 
     )
 
     # Constraints
@@ -49,12 +49,12 @@ def optimize_battery_control(battery: Battery, lmps: pd.DataFrame, initial_soc=0
         "cSOC",
     )
 
-    model.addConstrs((c[t] >= 0 for t in range(0, t_steps)), "cCNonNeg")
-    model.addConstrs((c[t] <= max_c * lmps['time_step_duration'] for t in range(0, t_steps)), "cMaxC")
-    model.addConstrs((d[t] >= 0 for t in range(0, t_steps)), "cDNonNeg")
-    model.addConstrs((d[t] <= max_d * lmps['time_step_duration'] for t in range(0, t_steps)), "cMaxD")
-    model.addConstrs((s[t] >= 0 for t in range(0, t_steps + 1)), "cSOCNonNeg")
-    model.addConstrs((s[t] <= max_soc for t in range(0, t_steps + 1)), "cMaxSOC")
+    model.addConstrs((c[t] >= 0 for t in range(0, t_steps - 1)), "cCNonNeg")
+    model.addConstrs((c[t - 1] <= max_c * lmps['time_step_duration'][t] for t in range(1, t_steps)), "cMaxC")
+    model.addConstrs((d[t] >= 0 for t in range(0, t_steps - 1)), "cDNonNeg")
+    model.addConstrs((d[t - 1] <= max_d * lmps['time_step_duration'][t] for t in range(1, t_steps)), "cMaxD")
+    model.addConstrs((s[t] >= 0 for t in range(0, t_steps)), "cSOCNonNeg")
+    model.addConstrs((s[t] <= max_soc for t in range(0, t_steps)), "cMaxSOC")
 
     model.setParam(GRB.Param.Threads, 0)
     start_time = time.time()
@@ -62,9 +62,9 @@ def optimize_battery_control(battery: Battery, lmps: pd.DataFrame, initial_soc=0
     end_time = time.time()
         
     if model.Status == 2:
-        charge_values = [c[i].X for i in range(t_steps)]
-        discharge_values = [d[i].X for i in range(t_steps)]
-        soc_values = [s[i].X for i in range(t_steps + 1)]
+        charge_values = [c[i].X for i in range(t_steps - 1)]
+        discharge_values = [d[i].X for i in range(t_steps - 1)]
+        soc_values = [s[i].X for i in range(t_steps)]
         return {
             "status_num": model.Status,
             "message": "Problem solved optimally",
