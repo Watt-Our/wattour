@@ -6,8 +6,8 @@ from .battery import Battery
 
 # Optimize battery control for given battery and lmps
 # lmp format: [timestamp, lmp]
-def optimize_battery_control(battery: Battery, lmps: pd.DataFrame, initial_soc=0):
-    t_steps = len(lmps) # total number of time steps
+def optimize_battery_control(battery: Battery, lmps: pd.DataFrame, initial_soc=0, final_soc=0):
+    t_steps = len(lmps) # total number of time steps    
     
     # Battery parameters
     max_c = battery.get_charge_rate() # maximum charging rate
@@ -16,11 +16,17 @@ def optimize_battery_control(battery: Battery, lmps: pd.DataFrame, initial_soc=0
     discharge_eff = battery.get_discharge_efficiency() # discharging efficiency
     self_discharge_rate = battery.get_self_discharge_rate() # self discharge rate (% per hour)
     max_soc = battery.get_usable_capacity() # maximum state of charge
+    
+    # Check that initial and final state of charge are valid
     if initial_soc > max_soc or initial_soc < 0:
         raise ValueError("Invalid initial state of charge")
+    if final_soc > max_soc or final_soc < 0:
+        raise ValueError("Invalid final state of charge")
+    
 
     # Account for time step durations
-    lmps['timestamp'] = pd.to_datetime(lmps['timestamp'])
+    if not pd.api.types.is_datetime64_any_dtype(lmps['timestamp']):
+        raise ValueError("The 'timestamp' column must be of datetime type")
     lmps['time_step_duration'] = lmps['timestamp'].diff().dt.total_seconds() / 3600
 
     model = gp.Model("Battery Control Optimizer")
@@ -55,6 +61,7 @@ def optimize_battery_control(battery: Battery, lmps: pd.DataFrame, initial_soc=0
     model.addConstrs((d[t - 1] <= max_d * lmps['time_step_duration'][t] for t in range(1, t_steps)), "cMaxD")
     model.addConstrs((s[t] >= 0 for t in range(0, t_steps)), "cSOCNonNeg")
     model.addConstrs((s[t] <= max_soc for t in range(0, t_steps)), "cMaxSOC")
+    model.addConstr(s[t_steps - 1] == final_soc)
 
     model.setParam(GRB.Param.Threads, 0)
     start_time = time.time()
