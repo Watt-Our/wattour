@@ -1,5 +1,5 @@
-import wattour_optimization as wo
-from wattour_optimization.battery import GenericBattery
+import wattour as wo
+from wattour.battery import GenericBattery
 import pandas as pd
 
 # Create a battery object
