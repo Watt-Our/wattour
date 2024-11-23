@@ -1,5 +1,6 @@
 import time
 import pandas as pd
+import numpy as np
 import gurobipy as gp
 from gurobipy import GRB
 from .battery import Battery
@@ -69,9 +70,9 @@ def optimize_battery_control(battery: Battery, lmps: pd.DataFrame, initial_soc=0
     end_time = time.time()
         
     if model.Status == 2:
-        charge_values = [c[i].X for i in range(t_steps - 1)]
-        discharge_values = [d[i].X for i in range(t_steps - 1)]
-        soc_values = [s[i].X for i in range(t_steps)]
+        charge_values = np.array([c[i].X for i in range(t_steps - 1)])
+        discharge_values = np.array([d[i].X for i in range(t_steps - 1)])
+        soc_values = np.array([s[i].X for i in range(t_steps)])
         return {
             "status_num": model.Status,
             "message": "Problem solved optimally",
