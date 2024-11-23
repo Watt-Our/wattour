@@ -1,4 +1,4 @@
-import wattour as wo
+import wattour.optimization as wo
 from wattour.battery import GenericBattery
 import pandas as pd
 

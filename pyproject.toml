@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "wattour-optimization"
+name = "wattour"
 version = "0.1.0"
-description = "Internal Watt-Our package for optimization methods"
+description = "Internal Watt-Our package for different methods"
 authors = ["Alex Tseng <134972440+alexrtseng@users.noreply.github.com>"]
 license = "Proprietary"
 readme = "README.md"
