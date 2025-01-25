@@ -62,17 +62,15 @@ lmp_timeseries = LMPTimeseries(LMP())
 lmp_timeseries.create_from_df(lmps, datetime.timedelta(hours=1))
 lmp_timeseries.calc_coefficients()
 
+# Create a LMPTimeseries object with 5-minute data
+lmp_timeseries_5min = LMPTimeseries(LMP())
+lmp_timeseries_5min.create_from_df(lmps_5min, datetime.timedelta(minutes=5))
+lmp_timeseries_5min.calc_coefficients()
+
 
 if __name__ == "__main__":
-    # # Optimize battery control with hourly LMP data
-    # results_hourly = wo.optimize_battery_control(battery, lmps, initial_soc=0)
-    # print(results_hourly)
-
-    # # Optimize battery control with 5-minute LMP data
-    # results_fiveminute = wo.optimize_battery_control(battery, lmps_5min, initial_soc=0)
-    # print(results_fiveminute)
-
-    # Test optimize_battery_control function
-
     results = optimize_battery_control(battery, lmp_timeseries)
     print(results)
+
+    results_5min = optimize_battery_control(battery, lmp_timeseries_5min)
+    print(results_5min)
