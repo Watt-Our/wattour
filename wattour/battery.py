@@ -27,7 +27,7 @@ class Battery(ABC):
     def get_discharge_efficiency(self) -> float:
         pass
 
-    # Return self discharge rate in % < 1
+    # Return self discharge rate in % < 1 (% of initial energy lost per hour)
     @abstractmethod
     def get_self_discharge_rate(self) -> float:
         pass
