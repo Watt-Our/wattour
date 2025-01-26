@@ -1,7 +1,6 @@
 import wattour.optimization as wo
 from wattour.battery import GenericBattery
 import pandas as pd
-from wattour.optimization import optimize_battery_control
 from wattour.lmp_timeseries import LMPTimeseries, LMP
 import datetime
 
@@ -59,7 +58,7 @@ lmps_5min = pd.DataFrame(
 
 # Create a LMPTimeseries object
 lmp_timeseries = LMPTimeseries(LMP())
-lmp_timeseries.create_from_df(lmps, datetime.timedelta(hours=1))
+lmp_timeseries.create_from_df(lmps, datetime.timedelta(minutes=5))
 lmp_timeseries.calc_coefficients()
 
 # Create a LMPTimeseries object with 5-minute data
@@ -69,8 +68,7 @@ lmp_timeseries_5min.calc_coefficients()
 
 
 if __name__ == "__main__":
-    results = optimize_battery_control(battery, lmp_timeseries)
-    print(results)
+    results = wo.optimize_battery_control(battery, lmp_timeseries)
 
-    results_5min = optimize_battery_control(battery, lmp_timeseries_5min)
-    print(results_5min)
+    results_5min = wo.optimize_battery_control(battery, lmp_timeseries_5min)
+    print(lmp_timeseries.head.charge.X)
