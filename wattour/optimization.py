@@ -19,6 +19,9 @@ def optimize_battery_control(
 
     model = gp.Model("Battery Control Optimizer")
 
+    if lmps.head.coefficient is None:
+        lmps.calc_coefficients()
+
     lmps.add_gurobi_vars(model)
     node_list = lmps.get_node_list(dummies=False)
 
