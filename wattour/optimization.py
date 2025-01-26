@@ -8,7 +8,7 @@ from .lmp_timeseries import LMPTimeseries
 # Optimize battery control for given battery and lmps using LMPTimeseries. If the
 # LMPTimeseries has branches, this function will complete stochastic optimization
 def optimize_battery_control(
-    battery: Battery, lmps: LMPTimeseries, initial_soc=0, final_soc=0
+    battery: Battery, lmps: LMPTimeseries, initial_soc: float=0, final_soc: float=0
 ):
     # Check that initial and final state of charge are valid
     max_soc = battery.get_usable_capacity()  # maximum state of charge

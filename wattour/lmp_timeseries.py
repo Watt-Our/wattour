@@ -9,7 +9,7 @@ class LMP:
     def __init__(
         self,
         timestamp: datetime.datetime = None,
-        price: float = None,
+        price: float = None, # presumably $ / MW
         elapsed_time: datetime.timedelta = None,
     ):
         self.timestamp = timestamp
