@@ -1,7 +1,7 @@
-import wattour.optimization as wo
-from wattour.battery import GenericBattery
+import wattour.optimization.optimize_battery_control as wo
+from wattour.core.battery import GenericBattery
 import pandas as pd
-from wattour.lmp_timeseries import LMPTimeseries, LMP
+from wattour.core.lmp_timeseries_base import LMPTimeseries, LMP
 import datetime
 
 # Create a battery object

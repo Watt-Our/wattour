@@ -1,8 +1,8 @@
 import time
 import gurobipy as gp
 from gurobipy import GRB
-from .battery import Battery
-from .lmp_timeseries import LMPTimeseries
+from ..core.battery import Battery
+from ..core.lmp_timeseries_base import LMPTimeseries
 
 
 # Optimize battery control for given battery and lmps using LMPTimeseries. If the

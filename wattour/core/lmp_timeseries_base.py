@@ -1,42 +1,24 @@
 from __future__ import annotations
 
 import datetime
-from dataclasses import dataclass, field
-from typing import Optional
 
 import pandas as pd
-from gurobipy import Model, Var
+from gurobipy import Model
 
-from .battery import Battery
-
-
-# helper class for individual nodes (linked list / graph)
-# TODO: we should make as many params required as possible
-@dataclass
-class LMP:
-    timestamp: Optional[datetime.datetime] = None
-    elapsed_time: Optional[datetime.timedelta] = None  # time that elapsed between previous node and this one
-
-    price: Optional[float] = None  # presumably $ / MW
-    coefficient: Optional[float] = None  # Coefficient to multiply price by (for stochastic with several branches)
-    charge: Optional[Var] = None
-    discharge: Optional[Var] = None
-    soc: Optional[Var] = None
-
-    next: list[LMP] = field(default_factory=list)
-    dummy: bool = False  # dummy nodes are used to represent time elapsed between last forecasted price
+from .battery import BatteryBase
+from .lmp_base import LMPBase
 
 
 # class to represent lmp timeseries
 # TODO: If we need more basic lmptimeseries, main functionality should be moved to abstract and gurobi
 # specific functions should be moved to a child class
 class LMPTimeseriesBase:
-    def __init__(self, head: LMP):
+    def __init__(self, head: LMPBase):
         self.head = head
         self.total_nodes = 1
         self.branches = 1
 
-    def add_node(self, prev_node: LMP, new_node: LMP) -> None:
+    def add_node(self, prev_node: LMPBase, new_node: LMPBase) -> None:
         """Add a node to another node (linked list)."""
         if not new_node.timestamp or not prev_node.timestamp:
             return
@@ -54,7 +36,7 @@ class LMPTimeseriesBase:
         """
         prev_node = None
         for _, row in lmp_df.iterrows():
-            current_node = LMP(timestamp=row["timestamp"], price=row["lmp"])
+            current_node = LMPBase(timestamp=row["timestamp"], price=row["lmp"])
             if prev_node is not None:
                 self.add_node(prev_node, current_node)
             else:
@@ -64,10 +46,10 @@ class LMPTimeseriesBase:
         if prev_node is not None:
             self.add_dummy_node(prev_node, final_time_interval)
 
-    def add_dummy_node(self, node: LMP, elapsed_time: datetime.timedelta) -> None:
+    def add_dummy_node(self, node: LMPBase, elapsed_time: datetime.timedelta) -> None:
         """Add dummy node to the end of timseries branch."""
         new_timestamp = node.timestamp + elapsed_time if node.timestamp else None
-        new_node = LMP(timestamp=new_timestamp, price=0, elapsed_time=elapsed_time)
+        new_node = LMPBase(timestamp=new_timestamp, price=0, elapsed_time=elapsed_time)
         new_node.dummy = True
 
         if node.next:
@@ -79,7 +61,7 @@ class LMPTimeseriesBase:
 
         # helper function for calc coefficients that calculates coefficients
         # for a node's children and then recursively calls the function for children nodes
-        def calc_coefficients_helper(node: LMP):
+        def calc_coefficients_helper(node: LMPBase):
             if node.next and node.coefficient:
                 child_coefficient = node.coefficient / len(node.next)
                 for child_node in node.next:
@@ -92,7 +74,7 @@ class LMPTimeseriesBase:
     def add_gurobi_vars(self, model):
         """Add gurobi decision variables to each node."""
 
-        def add_gurobi_vars_helper(model: Model, node: LMP):
+        def add_gurobi_vars_helper(model: Model, node: LMPBase):
             node.soc = model.addVar()
             if node.dummy:
                 return
@@ -105,7 +87,7 @@ class LMPTimeseriesBase:
 
     # create a list of all node objects
     def get_node_list(self, dummies: bool) -> list:
-        def get_node_list_helper(node: LMP, node_list: list):
+        def get_node_list_helper(node: LMPBase, node_list: list):
             if node.dummy and (not dummies):
                 return
             node_list.append(node)
@@ -117,7 +99,7 @@ class LMPTimeseriesBase:
         return node_list
 
     # generate constraints for a gurobi optimization problem
-    def generate_constraints(self, model: Model, battery: Battery, initial_soc=0, min_final_soc=0):
+    def generate_constraints(self, model: Model, battery: BatteryBase, initial_soc=0, min_final_soc=0):
         # helper function to generate constraints for each node
         max_soc = battery.get_usable_capacity()
         max_charge = battery.get_charge_rate()
@@ -125,7 +107,7 @@ class LMPTimeseriesBase:
         charge_eff = battery.get_charge_efficiency()
         discharge_eff = battery.get_discharge_efficiency()
 
-        def generate_constraints_helper(node: LMP):
+        def generate_constraints_helper(node: LMPBase):
             if not (node.soc and node.charge and node.discharge):
                 return
 
@@ -156,7 +138,3 @@ class LMPTimeseriesBase:
 
         model.addConstr(self.head.soc == initial_soc)
         generate_constraints_helper(self.head)
-
-
-class LMPTimeseriesGurobi(LMPTimeseriesBase):
-    pass

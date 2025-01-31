@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 # Abstract class for batteries
-class Battery(ABC):
+class BatteryBase(ABC):
     # Return usable capacity in MWh
     @abstractmethod
     def get_usable_capacity(self) -> float:
@@ -33,7 +33,7 @@ class Battery(ABC):
         pass
 
 # Generic battery class
-class GenericBattery(Battery):
+class GenericBattery(BatteryBase):
     def __init__(self, usable_capacity, charge_rate, discharge_rate, charge_efficiency, discharge_efficiency, self_discharge_rate):
         self.usable_capacity = usable_capacity
         self.charge_rate = charge_rate
