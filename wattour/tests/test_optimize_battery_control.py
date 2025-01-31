@@ -1,8 +1,10 @@
-import wattour.optimization.optimize_battery_control as wo
-from wattour.core.battery import GenericBattery
-import pandas as pd
-from wattour.core.lmp_timeseries_base import LMPTimeseries, LMP
 import datetime
+
+import pandas as pd
+
+from wattour.core import LMPBase, LMPTimeseriesBase
+from wattour.core.battery import GenericBattery
+from wattour.optimization import optimize_battery_control
 
 # Create a battery object
 battery = GenericBattery(
@@ -57,18 +59,20 @@ lmps_5min = pd.DataFrame(
 )
 
 # Create a LMPTimeseries object
-lmp_timeseries = LMPTimeseries(LMP())
-lmp_timeseries.create_from_df(lmps, datetime.timedelta(minutes=5))
+lmp_timeseries = LMPTimeseriesBase(LMPBase(lmps.iloc[0]["timestamp"], lmps.iloc[0]["lmp"]))
+last_node = lmp_timeseries.create_branch_from_df(lmp_timeseries.head, lmps.iloc[1:])
+lmp_timeseries.add_dummy_node(last_node, datetime.timedelta(minutes=15))
 lmp_timeseries.calc_coefficients()
 
 # Create a LMPTimeseries object with 5-minute data
-lmp_timeseries_5min = LMPTimeseries(LMP())
-lmp_timeseries_5min.create_from_df(lmps_5min, datetime.timedelta(minutes=5))
+lmp_timeseries_5min = LMPTimeseriesBase(LMPBase(lmps_5min.iloc[0]["timestamp"], lmps_5min.iloc[0]["lmp"]))
+last_node = lmp_timeseries_5min.create_branch_from_df(lmp_timeseries_5min.head, lmps_5min.iloc[1:])
+lmp_timeseries_5min.add_dummy_node(last_node, datetime.timedelta(minutes=15))
 lmp_timeseries_5min.calc_coefficients()
 
 
 if __name__ == "__main__":
-    results = wo.optimize_battery_control(battery, lmp_timeseries)
+    results = optimize_battery_control(battery, lmp_timeseries)
 
-    results_5min = wo.optimize_battery_control(battery, lmp_timeseries_5min)
-    print(lmp_timeseries.head.charge.X)
+    results_5min = optimize_battery_control(battery, lmp_timeseries_5min)
+    print(results_5min.lmp_timeseries.head.charge.X)

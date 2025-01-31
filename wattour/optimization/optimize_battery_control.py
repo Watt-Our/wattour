@@ -1,15 +1,21 @@
 import time
+
 import gurobipy as gp
 from gurobipy import GRB
-from ..core.battery import Battery
-from ..core.lmp_timeseries_base import LMPTimeseries
+
+from wattour.core import BatteryBase, LMPTimeseriesBase
+
+from .lmp_timeseries_gurobi import LMPTimeseriesGurobi
 
 
 # Optimize battery control for given battery and lmps using LMPTimeseries. If the
 # LMPTimeseries has branches, this function will complete stochastic optimization
 def optimize_battery_control(
-    battery: Battery, lmps: LMPTimeseries, initial_soc: float=0, final_soc: float=0
+    battery: BatteryBase, lmps: LMPTimeseriesBase, initial_soc: float = 0, final_soc: float = 0
 ):
+    if not isinstance(lmps, LMPTimeseriesGurobi):
+        lmps = LMPTimeseriesGurobi().create_from_lmp_timeseries_base(lmps)
+
     # Check that initial and final state of charge are valid
     max_soc = battery.get_usable_capacity()  # maximum state of charge
     if initial_soc > max_soc or initial_soc < 0:
@@ -50,13 +56,13 @@ def optimize_battery_control(
     if model.Status == 2:
         return {
             "status_num": model.Status,
-            "message": "Problem solved optimally",
             "objective_value": model.objVal,
             "runtime": end_time - start_time,
             "model": model,
+            "lmp_timeseries": lmps,
         }
     else:
         return {
             "status_num": model.Status,
-            "message": "Problem did not optimize",
+            "lmp_timeseries": lmps,
         }
