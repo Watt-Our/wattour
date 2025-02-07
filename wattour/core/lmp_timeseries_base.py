@@ -16,7 +16,6 @@ class LMPTimeseriesBase:
         self.total_nodes: int = 1
         self.branches: int = 1
         self.dummy_nodes: int = 0  # can use this to check that all branches have a dummy node
-        self.latest_id = 1  # start at 1 because of head
 
     def add_node(self, prev_node: LMP, new_node: LMP) -> None:
         """Add a node to another node (linked list)."""
@@ -43,8 +42,7 @@ class LMPTimeseriesBase:
 
         prev_node = start_node
         for _, row in lmp_df.iterrows():
-            current_node = LMP(id=self.latest_id, timestamp=row["timestamp"], price=row["lmp"])
-            self.latest_id += 1
+            current_node = LMP(timestamp=row["timestamp"].to_pydatetime(), price=row["lmp"])
             self.add_node(prev_node, current_node)
             prev_node = current_node
 
@@ -56,8 +54,7 @@ class LMPTimeseriesBase:
         if not new_timestamp:
             return
 
-        new_node = LMP(id=self.latest_id, timestamp=new_timestamp, price=0, elapsed_time=elapsed_time)
-        self.latest_id += 1
+        new_node = LMP(timestamp=new_timestamp, price=0, elapsed_time=elapsed_time)
         new_node.dummy = True
 
         if node.next:

@@ -42,7 +42,7 @@ def optimize_battery_control(
     # Objective function; charge and dischare are in power units
     model.setObjective(
         gp.quicksum(
-            (node_list[i].charge - node_list[i].discharge)
+            (lmps.lmp_decisions_vars[node_list[i].id]["discharge"] - lmps.lmp_decisions_vars[node_list[i].id]["charge"])
             * (child_node.elapsed_time.total_seconds() / 3600)
             * child_node.coefficient
             * node_list[i].price

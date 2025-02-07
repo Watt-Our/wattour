@@ -20,7 +20,7 @@ battery = GenericBattery(
 lmps = pd.DataFrame(
     {
         "timestamp": pd.date_range("2021-01-01", periods=11, freq="h"),
-        "lmp": [0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 100],
+        "lmp": [0, 0, 0, 0, 0, 0, 100, 0, 100, 0, 0],
     }
 )
 
@@ -59,13 +59,13 @@ lmps_5min = pd.DataFrame(
 )
 
 # Create a LMPTimeseries object
-lmp_timeseries = LMPTimeseriesBase(LMP(0, lmps.iloc[0]["timestamp"], lmps.iloc[0]["lmp"]))
+lmp_timeseries = LMPTimeseriesBase(LMP(lmps.iloc[0]["timestamp"], lmps.iloc[0]["lmp"]))
 last_node = lmp_timeseries.create_branch_from_df(lmp_timeseries.head, lmps.iloc[1:])
-lmp_timeseries.add_dummy_node(last_node, datetime.timedelta(minutes=15))
+lmp_timeseries.add_dummy_node(last_node, datetime.timedelta(hours=1))
 lmp_timeseries.calc_coefficients()
 
 # Create a LMPTimeseries object with 5-minute data
-lmp_timeseries_5min = LMPTimeseriesBase(LMP(0, lmps_5min.iloc[0]["timestamp"], lmps_5min.iloc[0]["lmp"]))
+lmp_timeseries_5min = LMPTimeseriesBase(LMP(lmps_5min.iloc[0]["timestamp"], lmps_5min.iloc[0]["lmp"]))
 last_node = lmp_timeseries_5min.create_branch_from_df(lmp_timeseries_5min.head, lmps_5min.iloc[1:])
 lmp_timeseries_5min.add_dummy_node(last_node, datetime.timedelta(minutes=15))
 lmp_timeseries_5min.calc_coefficients()
@@ -73,6 +73,4 @@ lmp_timeseries_5min.calc_coefficients()
 
 if __name__ == "__main__":
     results = optimize_battery_control(battery, lmp_timeseries)
-
     results_5min = optimize_battery_control(battery, lmp_timeseries_5min)
-    print(results_5min.lmp_timeseries.head)  # need to get charge differently

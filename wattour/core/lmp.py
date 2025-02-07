@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import uuid
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -9,7 +10,6 @@ from typing import Optional
 # TODO: we should make as many params required as possible
 @dataclass
 class LMP:
-    id: int
     timestamp: datetime.datetime
     price: float  # presumably $ / MW
 
@@ -18,3 +18,5 @@ class LMP:
 
     next: list[LMP] = field(default_factory=list)
     dummy: bool = False  # dummy nodes are used to represent time elapsed between last forecasted price
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+
