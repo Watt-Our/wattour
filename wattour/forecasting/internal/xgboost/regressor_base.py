@@ -122,15 +122,26 @@ class XGBRegressorBase(ForecastingModelBase):
 
         return regs, scores
 
-    def predict(self, df: pd.DataFrame):
+    def predict(self, df: pd.DataFrame, head: LMP, **kwargs) -> LMPTimeseriesBase:
+        """Predict the LMP values for the given dataframe. The head is the first node of the LMP timeseries."""
         if not self.regs:
             raise ValueError("The model has not been trained or loaded yet.")
 
         self.validate_test_data(df)
         X = self.create_features(df)
         preds = []
+        lmp_timeseries = LMPTimeseriesBase(head)
         for reg in self.regs:
-            preds.append(reg.predict(X))
+            y_pred = reg.predict(X)
+            preds.append(y_pred)
 
+        if kwargs.get("average", False):
+            avg_preds = np.mean(preds, axis=0)
+            result_df = pd.DataFrame({"timestamp": df["timestamp"], "price": avg_preds})
+            lmp_timeseries.create_branch_from_df(head, result_df)
+        else:
+            for pred in preds:
+                result_df = pd.DataFrame({"timestamp": df["timestamp"], "price": pred})
+                lmp_timeseries.create_branch_from_df(head, result_df)
 
-        return preds
+        return lmp_timeseries

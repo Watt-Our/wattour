@@ -24,6 +24,10 @@ class LMPTimeseriesBase:
         self.branches: int = 1
         self.dummy_nodes: int = 0  # can use this to check that all branches have a dummy node
 
+    def __print__(self):
+        """Return a string representation of the LMPTimeseriesBase instance."""
+        return f"LMPTimeseriesBase: {self.total_nodes} nodes, {self.branches} branches, {self.dummy_nodes} dummy nodes"
+
     def add_node(self, prev_node: LMP, new_node: LMP) -> None:
         """Add a node to another node (linked list)."""
         if not new_node.timestamp or not prev_node.timestamp:
