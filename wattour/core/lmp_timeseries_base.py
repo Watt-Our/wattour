@@ -10,8 +10,9 @@ from .lmp import LMP
 
 
 class LMPDataFrame(pa.DataFrameModel):
-        price: Series[float]
-        timestamp: Series[pd.Timestamp]
+    price: Series[float]
+    timestamp: Series[pd.Timestamp]
+
 
 # class to represent lmp timeseries
 # TODO: If we need more basic lmptimeseries, main functionality should be moved to abstract and gurobi
@@ -68,6 +69,19 @@ class LMPTimeseriesBase:
             self.branches += 1
         self.dummy_nodes += 1
         node.next.append(new_node)
+
+    def add_branch(self, node: LMP, branch: LMPTimeseriesBase):
+        """Add a branch to a node."""
+        if node.dummy:
+            raise ValueError("Cannot add a branch to a dummy node.")
+
+        if not node.next:
+            self.branches += 1
+        self.branches += branch.branches - 1
+        self.total_nodes += branch.total_nodes
+        self.dummy_nodes += branch.dummy_nodes
+
+        node.next.append(branch.head)
 
     def calc_coefficients(self):
         """Calculate coefficients based on branching to prevent overweighting timesteps with lots of branches."""
