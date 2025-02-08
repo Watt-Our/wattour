@@ -11,13 +11,15 @@ from pandera.typing import Series
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import TimeSeriesSplit
 
+from wattour.core.lmp import LMP
+from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
 from wattour.forecasting.internal.forecasting_model_base import ForecastingModelBase
 
 
 # base class for forecasting XGBoost regressor models
 class XGBRegressorBase(ForecastingModelBase):
     class InputDataframe(pa.DataFrameModel):
-        time: Series[pd.Timestamp]
+        timestamp: Series[pd.Timestamp]
 
     def __init__(self, num_folds: int, y_col: str = "price"):
         self.num_folds = num_folds
@@ -28,7 +30,7 @@ class XGBRegressorBase(ForecastingModelBase):
     def create_features(self, _df: pd.DataFrame):
         """Create features for the model. This super implementation includes time features."""
         df = _df.copy()
-        df = df.set_index("time")
+        df = df.set_index("timestamp")
         df["day_of_week"] = df.index.dayofweek
         df["weekend"] = df.index.dayofweek >= 5
         df["minute_of_day"] = df.index.hour * 60 + df.index.minute
@@ -129,4 +131,6 @@ class XGBRegressorBase(ForecastingModelBase):
         preds = []
         for reg in self.regs:
             preds.append(reg.predict(X))
+
+
         return preds

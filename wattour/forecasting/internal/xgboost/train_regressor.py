@@ -8,7 +8,7 @@ def main(regressor: XGBRegressorBase):
     data_path = input("Enter the path to the data file: ")
     test_size = int(input("Enter the test size: "))
     df = pd.read_csv(data_path)
-    df["time"] = pd.to_datetime(df["time"])
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
     regressor.train(df, test_size, verbose=True)
 
 

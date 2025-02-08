@@ -3,9 +3,15 @@ from __future__ import annotations
 import datetime
 
 import pandas as pd
+import pandera as pa
+from pandera.typing import Series
 
 from .lmp import LMP
 
+
+class LMPDataFrame(pa.DataFrameModel):
+        price: Series[float]
+        timestamp: Series[pd.Timestamp]
 
 # class to represent lmp timeseries
 # TODO: If we need more basic lmptimeseries, main functionality should be moved to abstract and gurobi
@@ -37,12 +43,13 @@ class LMPTimeseriesBase:
 
         Dataframe format must be [timestamp, lmp]. Returns the final node in the branch.
         """
+        LMPDataFrame.validate(lmp_df)
         if lmp_df.empty:
             raise ValueError("The lmp_df DataFrame has no rows.")
 
         prev_node = start_node
         for _, row in lmp_df.iterrows():
-            current_node = LMP(timestamp=row["timestamp"].to_pydatetime(), price=row["lmp"])
+            current_node = LMP(timestamp=row["timestamp"], price=row["price"])
             self.add_node(prev_node, current_node)
             prev_node = current_node
 
