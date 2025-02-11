@@ -6,8 +6,8 @@ from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
 
 
 class LMPTimeseriesGurobi(LMPTimeseriesBase):
-    def __init__(self, head: LMP):
-        super().__init__(head)  # Call parent __init__
+    def __init__(self, head: LMP, nodes: int, branches: int, dummy_nodes: int):
+        super().__init__(head, nodes, branches, dummy_nodes)  # Call parent __init__
         self.lmp_decisions_vars = {}  # nodes are the keys, dictionary of decision variables
 
     def add_gurobi_vars(self, model):

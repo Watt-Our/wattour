@@ -22,7 +22,8 @@ def optimize_battery_control(
     battery: BatteryBase, lmps: LMPTimeseriesBase, initial_soc: float = 0, final_soc: float = 0
 ) -> BatteryControlResult:
     if not isinstance(lmps, LMPTimeseriesGurobi):
-        lmps = LMPTimeseriesGurobi(lmps.head)
+        # ugly, but temp
+        lmps = LMPTimeseriesGurobi(lmps.head, lmps.total_nodes, lmps.branches, lmps.dummy_nodes)
 
     # Check that initial and final state of charge are valid
     max_soc = battery.get_usable_capacity()  # maximum state of charge
