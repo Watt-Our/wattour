@@ -45,7 +45,7 @@ class XGBRegressorBase(ForecastingModelBase):
             output_dir.mkdir(parents=True)
 
         for i, reg in enumerate(self.regs):
-            reg.save_model(output_dir / f"model_{i}.json")
+            reg.save_model(output_dir / f"model_{i}.ubj")
 
     def load(self, path: Path):
         output_dir = Path(path)
