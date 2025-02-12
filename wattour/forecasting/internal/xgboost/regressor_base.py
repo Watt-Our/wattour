@@ -47,12 +47,11 @@ class XGBRegressorBase(ForecastingModelBase):
         for i, reg in enumerate(self.regs):
             reg.save_model(output_dir / f"model_{i}.ubj")
 
-    def load(self, path: Path):
-        output_dir = Path(path)
+    def load(self, paths: list[Path]):
         regs = []
-        for i in range(self.num_folds):
+        for path in paths:
             reg = xgb.XGBRegressor()
-            reg.load_model(output_dir / f"model_{i}.json")
+            reg.load_model(path)
             regs.append(reg)
 
         self.regs = regs
