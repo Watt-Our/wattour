@@ -26,10 +26,9 @@ def optimize_battery_control(
         lmps = LMPTimeseriesGurobi(lmps.head, lmps.total_nodes, lmps.branches, lmps.dummy_nodes)
 
     # Check that initial and final state of charge are valid
-    max_soc = battery.get_usable_capacity()  # maximum state of charge
-    if initial_soc > max_soc or initial_soc < 0:
+    if initial_soc > 1 or initial_soc < 0:
         raise ValueError("Invalid initial state of charge")
-    if final_soc > max_soc or final_soc < 0:
+    if final_soc > 1 or final_soc < 0:
         raise ValueError("Invalid final state of charge")
 
     model = gp.Model("Battery Control Optimizer")
