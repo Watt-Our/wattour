@@ -13,5 +13,5 @@ class ForecastingModelBase(ABC):
         pass
 
     @abstractmethod
-    def predict(self, df: pd.DataFrame, head: LMP) -> LMPTimeseriesBase:
+    def predict(self, df: pd.DataFrame) -> pd.DataFrame:
         pass
