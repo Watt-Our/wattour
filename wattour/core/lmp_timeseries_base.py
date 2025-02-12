@@ -62,18 +62,18 @@ class LMPTimeseriesBase:
 
     # this can be refactored so that the dt is decoupled from instantiation w/ an ADT that stores info about struct
     @staticmethod
-    def create_branch_from_df(lmp_df: pd.DataFrame):
+    def create_branch_from_df(
+        lmp_df: pd.DataFrame, add_dummy=True
+    ) -> LMPTimeseriesBase | tuple[LMPTimeseriesBase, LMP]:
         """Populate the lmptimeseries from a dataframe (must be single link).
 
         Dataframe format must be [timestamp, lmp]. Returns the final node in the branch.
         """
-        print(lmp_df)
         LMPDataFrame.validate(lmp_df)
         if lmp_df.empty:
             raise ValueError("The lmp_df DataFrame has no rows.")
 
         total_nodes = 0
-        branches = 0
         dummy_nodes = 0
 
         prev_node = None
@@ -83,18 +83,16 @@ class LMPTimeseriesBase:
                 head = current_node
             else:
                 LMPTimeseriesBase.add_node(prev_node, current_node)
-                if prev_node.next:
-                    branches += 1
 
             total_nodes += 1
             prev_node = current_node
 
-        LMPTimeseriesBase.add_dummy_node(current_node, datetime.timedelta(hours=1))
-        if current_node.next:
-            branches += 1
-        dummy_nodes += 1
+        if add_dummy:
+            LMPTimeseriesBase.add_dummy_node(current_node, datetime.timedelta(hours=1))
+            dummy_nodes += 1
+            LMPTimeseriesBase(head, total_nodes, 1, dummy_nodes), current_node
 
-        return LMPTimeseriesBase(head, total_nodes, branches, dummy_nodes)
+        return LMPTimeseriesBase(head, total_nodes, 1, dummy_nodes)
 
     def add_branch(self, node: LMP, branch: LMPTimeseriesBase):
         """Add a branch to a node."""

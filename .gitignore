@@ -166,3 +166,4 @@ cython_debug/
 
 # data files
 data/
+xgboost_models/
