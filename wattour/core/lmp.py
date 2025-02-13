@@ -1,22 +1,32 @@
 from __future__ import annotations
 
 import datetime
-import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
+
+from wattour.core.utils.smth import Node
 
 
 # helper class for individual nodes (linked list / graph)
 # TODO: we should make as many params required as possible
 @dataclass
-class LMP:
-    timestamp: datetime.datetime
+class LMP(Node):
     price: float  # presumably $ / MW
-
+    timestamp: datetime.datetime
     elapsed_time: Optional[datetime.timedelta] = None  # time that elapsed between previous node and this one
     coefficient: Optional[float] = None  # coefficient to weight given node (important in optimization)
 
-    next: list[LMP] = field(default_factory=list)
-    dummy: bool = False  # dummy nodes are used to represent time elapsed between last forecasted price
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    def __post_init__(self):
+        super().__init__()
 
+    # validate takes a Node of LMP but dk how to type rn
+    def validate(self, prev: LMP) -> None:
+        if not self.timestamp or not prev.timestamp:
+            raise ValueError("All nodes must have a timestamp.")
+        if self.timestamp <= prev.timestamp:
+            raise ValueError("The new_node timestamp must be greater than the prev_node timestamp.")
+        if prev.dummy:
+            raise ValueError("Cannot add a node to a dummy node.")
+
+    def enrich(self, prev: LMP) -> None:
+        self.elapsed_time = self.timestamp - prev.timestamp

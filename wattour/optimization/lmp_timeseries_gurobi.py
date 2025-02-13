@@ -5,13 +5,17 @@ from wattour.core.lmp import LMP
 from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
 
 
+# hacky structure
 class LMPTimeseriesGurobi(LMPTimeseriesBase):
-    def __init__(self, head: LMP, nodes: int, branches: int, dummy_nodes: int):
-        super().__init__(head, nodes, branches, dummy_nodes)  # Call parent __init__
+    def __init__(self, cls: LMPTimeseriesBase):
+        super().__init__()
+        self.timeseries = cls.timeseries
         self.lmp_decisions_vars = {}  # nodes are the keys, dictionary of decision variables
 
     def add_gurobi_vars(self, model):
         """Add gurobi decision variables to each node."""
+        if self.timeseries.head is None:
+            raise ValueError("Timeseries is empty")
 
         def add_gurobi_vars_helper(model: Model, node: LMP):
             if node.dummy:
@@ -22,13 +26,15 @@ class LMPTimeseriesGurobi(LMPTimeseriesBase):
             for child_node in node.next:
                 add_gurobi_vars_helper(model, child_node)
 
-        add_gurobi_vars_helper(model, self.head)
+        add_gurobi_vars_helper(model, self.timeseries.head)
 
-    # generate constraints for a gurobi optimization problem
     def generate_constraints(
         self, model: Model, battery: BatteryBase, initial_soc: float = 0, min_final_soc: float = 0
     ):
-        # helper function to generate constraints for each node
+        """Generate constraints for a gurobi optimization problem."""
+        if self.timeseries.head is None:
+            raise ValueError("Timeseries is empty")
+
         max_soe = battery.get_usable_capacity()
         max_charge = battery.get_charge_rate()
         max_discharge = battery.get_discharge_rate()
@@ -64,5 +70,5 @@ class LMPTimeseriesGurobi(LMPTimeseriesBase):
                 )
                 generate_constraints_helper(child_node)
 
-        model.addConstr(self.lmp_decisions_vars[self.head.id]["soe"] == initial_soc * max_soe)
-        generate_constraints_helper(self.head)
+        model.addConstr(self.lmp_decisions_vars[self.timeseries.head.id]["soe"] == initial_soc * max_soe)
+        generate_constraints_helper(self.timeseries.head)

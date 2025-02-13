@@ -57,11 +57,13 @@ lmps_5min = pd.DataFrame(
 )
 
 # Create a LMPTimeseries object
-lmp_timeseries = LMPTimeseriesBase.create_branch_from_df(lmps)
+lmp_timeseries = LMPTimeseriesBase()
+lmp_timeseries.create_branch_from_df(lmps)
 lmp_timeseries.calc_coefficients()
 
 # Create a LMPTimeseries object with 5-minute data
-lmp_timeseries_5min = LMPTimeseriesBase.create_branch_from_df(lmps_5min)
+lmp_timeseries_5min = LMPTimeseriesBase()
+lmp_timeseries_5min.create_branch_from_df(lmps_5min)
 lmp_timeseries_5min.calc_coefficients()
 
 

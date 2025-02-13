@@ -23,7 +23,10 @@ def optimize_battery_control(
 ) -> BatteryControlResult:
     if not isinstance(lmps, LMPTimeseriesGurobi):
         # ugly, but temp
-        lmps = LMPTimeseriesGurobi(lmps.head, lmps.total_nodes, lmps.branches, lmps.dummy_nodes)
+        lmps = LMPTimeseriesGurobi(lmps)
+
+    if lmps.timeseries.head is None:
+        raise ValueError("Timeseries is empty")
 
     # Check that initial and final state of charge are valid
     if initial_soc > 1 or initial_soc < 0:
@@ -33,7 +36,7 @@ def optimize_battery_control(
 
     model = gp.Model("Battery Control Optimizer")
 
-    if lmps.head.coefficient is None:
+    if lmps.timeseries.head.coefficient is None:
         lmps.calc_coefficients()
 
     lmps.add_gurobi_vars(model)
