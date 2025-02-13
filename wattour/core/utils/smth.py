@@ -58,6 +58,7 @@ class Idk(Generic[V]):
         self.branches = 0
         self.dummy_nodes = 0
 
+    # ^^ i think append (or a prelude) will just become polymorphic and V will be bound to different node types
     def append(self, data: V):
         new_node = data
 
