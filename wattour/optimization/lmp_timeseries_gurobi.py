@@ -24,7 +24,7 @@ class LMPTimeseriesGurobi(LMPTimeseriesBase):
         if self.timeseries.head is None:
             raise ValueError("Timeseries is empty")
 
-        def add_gurobi_vars_helper(model: Model, node: LMP):
+        for node in self.timeseries.iter_nodes():
             if node.dummy:
                 decision_vars = LMPNodeDecisionVars(soe=model.addVar())
             else:
@@ -34,10 +34,6 @@ class LMPTimeseriesGurobi(LMPTimeseriesBase):
                     discharge=model.addVar(),
                 )
             self.lmp_decisions_vars[node.id] = decision_vars
-            for child_node in node.next:
-                add_gurobi_vars_helper(model, child_node)
-
-        add_gurobi_vars_helper(model, self.timeseries.head)
 
     def generate_constraints(
         self, model: Model, battery: BatteryBase, initial_soc: float = 0, min_final_soc: float = 0

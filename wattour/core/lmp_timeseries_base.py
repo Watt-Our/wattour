@@ -66,22 +66,11 @@ class LMPTimeseriesBase:
         self.timeseries.head.coefficient = 1.0
         calc_coefficients_helper(self.timeseries.head)
 
-    # TODO: this should be moved down
-    def get_node_list(self, dummies: bool) -> list:
+    def get_node_list(self, show_dummy: bool = True) -> list:
         """Create a list of all node objects."""
         if self.timeseries.head is None:
             return []
-
-        def get_node_list_helper(node: LMP, node_list: list):
-            if node.dummy and (not dummies):
-                return
-            node_list.append(node)
-            for child_node in node.next:
-                get_node_list_helper(child_node, node_list)
-
-        node_list = []
-        get_node_list_helper(self.timeseries.head, node_list)
-        return node_list
+        return list(self.timeseries.iter_nodes(show_dummy))
 
     # TODO: this too prob
     def __str__(self):

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import collections
 import uuid
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, Self, TypeVar
+from typing import Generator, Generic, Optional, Self, TypeVar
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -77,15 +78,30 @@ class Idk(Generic[V]):
         self.append(data)
         self.dummy_nodes += 1
 
-    # def add_branch(self, node: LMP, branch: LMPTimeseriesBase):
-    #     """Add a branch to a node."""
-    #     if node.dummy:
-    #         raise ValueError("Cannot add a branch to a dummy node.")
+    def iter_nodes(self, show_dummy: bool = True) -> Generator[V]:
+        # bfs
+        if not self.head:
+            raise ValueError("Timeseries is empty")
 
-    #     if not node.next:
-    #         self.branches += 1
-    #     self.branches += branch.branches - 1
-    #     self.total_nodes += branch.total_nodes
-    #     self.dummy_nodes += branch.dummy_nodes
+        q = collections.deque([self.head])
+        while q:
+            cur = q.popleft()
+            if not show_dummy and cur.dummy:
+                continue
 
-    #     node.next.append(branch.head)
+            yield cur
+            if cur.next:
+                q.extend(cur.next)
+
+    def add_branch(self, node: V, branch: Self):
+        """Add a branch to a node."""
+        if node.dummy:
+            raise ValueError("Cannot add a branch to a dummy node.")
+
+        if not node.next:
+            self.branches += 1
+        self.branches += branch.branches - 1
+        self.size += branch.size
+        self.dummy_nodes += branch.dummy_nodes
+
+        node.next.append(branch.head)

@@ -36,7 +36,7 @@ def optimize_battery_control(
         lmps.calc_coefficients()
 
     lmps.add_gurobi_vars(model)
-    node_list = lmps.get_node_list(dummies=False)
+    node_list = lmps.get_node_list(show_dummy=False)
 
     # Objective function; charge and dischare are in power units
     model.setObjective(
