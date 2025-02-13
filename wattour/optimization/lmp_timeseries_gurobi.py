@@ -1,39 +1,27 @@
-from typing import NamedTuple, Optional
-
-from gurobipy import Model, Var
+from gurobipy import Model
 
 from wattour.core.battery import BatteryBase
-from wattour.core.lmp import LMP
+from wattour.core.gurobi_lmp import GurobiLMP
 from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
 
 
-class LMPNodeDecisionVars(NamedTuple):
-    soe: Var
-    charge: Optional[Var] = None
-    discharge: Optional[Var] = None
-
-
 # hacky structure
-class LMPTimeseriesGurobi(LMPTimeseriesBase):
+class LMPTimeseriesGurobi(LMPTimeseriesBase[GurobiLMP]):
     def __init__(self):
-        super().__init__()
-        self.lmp_decisions_vars = {}  # nodes are the keys, namedtuples are the values
+        super().__init__(GurobiLMP)
 
-    def add_gurobi_vars(self, model):
+    def add_gurobi_vars(self, model: Model):
         """Add gurobi decision variables to each node."""
         if self.timeseries.head is None:
             raise ValueError("Timeseries is empty")
 
         for node in self.timeseries.iter_nodes():
             if node.dummy:
-                decision_vars = LMPNodeDecisionVars(soe=model.addVar())
+                node.soe = model.addVar()
             else:
-                decision_vars = LMPNodeDecisionVars(
-                    soe=model.addVar(),
-                    charge=model.addVar(),
-                    discharge=model.addVar(),
-                )
-            self.lmp_decisions_vars[node.id] = decision_vars
+                node.soe = model.addVar()
+                node.charge = model.addVar()
+                node.discharge = model.addVar()
 
     def generate_constraints(
         self, model: Model, battery: BatteryBase, initial_soc: float = 0, min_final_soc: float = 0
@@ -48,34 +36,36 @@ class LMPTimeseriesGurobi(LMPTimeseriesBase):
         charge_eff = battery.get_charge_efficiency()
         discharge_eff = battery.get_discharge_efficiency()
 
-        def generate_constraints_helper(node: LMP):
+        def generate_constraints_helper(node: GurobiLMP):
             # constraints
-            model.addConstr(self.lmp_decisions_vars[node.id].soe <= max_soe)
+            model.addConstr(node.soe <= max_soe)
             if node.dummy:
-                model.addConstr(self.lmp_decisions_vars[node.id].soe >= min_final_soc * max_soe)
+                model.addConstr(node.soe >= min_final_soc * max_soe)
                 return
-            model.addConstr(self.lmp_decisions_vars[node.id].soe >= 0)
-            model.addConstr(self.lmp_decisions_vars[node.id].charge <= max_charge)
-            model.addConstr(self.lmp_decisions_vars[node.id].charge >= 0)
-            model.addConstr(self.lmp_decisions_vars[node.id].discharge <= max_discharge)
-            model.addConstr(self.lmp_decisions_vars[node.id].discharge >= 0)
+
+            # for typing, for now
+            assert node.charge
+            assert node.discharge
+
+            model.addConstr(node.soe >= 0)
+            model.addConstr(node.charge <= max_charge)
+            model.addConstr(node.charge >= 0)
+            model.addConstr(node.discharge <= max_discharge)
+            model.addConstr(node.discharge >= 0)
             for child_node in node.next:
                 if child_node.elapsed_time is None:
                     continue
 
                 model.addConstr(
-                    self.lmp_decisions_vars[child_node.id].soe
-                    == self.lmp_decisions_vars[node.id].soe
+                    child_node.soe
+                    == node.soe
                     + (
-                        (
-                            self.lmp_decisions_vars[node.id].charge * charge_eff
-                            - self.lmp_decisions_vars[node.id].discharge / discharge_eff
-                        )
-                        - self.lmp_decisions_vars[node.id].soe * battery.get_self_discharge_rate()
+                        (node.charge * charge_eff - node.discharge / discharge_eff)
+                        - node.soe * battery.get_self_discharge_rate()
                     )
                     * (child_node.elapsed_time.total_seconds() / 3600)
                 )
                 generate_constraints_helper(child_node)
 
-        model.addConstr(self.lmp_decisions_vars[self.timeseries.head.id].soe == initial_soc * max_soe)
+        model.addConstr(self.timeseries.head.soe == initial_soc * max_soe)
         generate_constraints_helper(self.timeseries.head)

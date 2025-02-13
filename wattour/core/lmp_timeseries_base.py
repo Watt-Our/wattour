@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+from typing import Generic, TypeVar
 
 import pandas as pd
 import pandera as pa
@@ -28,9 +29,13 @@ def transform(df: pd.DataFrame, column_map: dict[str, str]) -> pd.DataFrame:
     return new_df
 
 
-class LMPTimeseriesBase:
-    def __init__(self):
-        self.timeseries: Idk[LMP] = Idk()
+T = TypeVar("T", bound=LMP)
+
+
+class LMPTimeseriesBase(Generic[T]):
+    def __init__(self, node_cls: type[T] = LMP):
+        self.timeseries: Idk[T] = Idk()
+        self.node_cls = node_cls
 
     def create_branch_from_df(self, lmp_df: pd.DataFrame, add_dummy: bool = True) -> None:
         """Populate the lmptimeseries from a dataframe (must be single link).
@@ -42,11 +47,11 @@ class LMPTimeseriesBase:
             raise ValueError("The lmp_df DataFrame has no rows.")
 
         for _, row in lmp_df.iterrows():
-            self.timeseries.append(LMP(timestamp=row["timestamp"], price=row["price"]))
+            self.timeseries.append(self.node_cls(timestamp=row["timestamp"], price=row["price"]))
 
         if add_dummy and self.timeseries.tail:
             self.timeseries.append_dummy(
-                LMP(price=0, timestamp=self.timeseries.tail.timestamp + datetime.timedelta(hours=1))
+                self.node_cls(price=0, timestamp=self.timeseries.tail.timestamp + datetime.timedelta(hours=1))
             )
 
     def calc_coefficients(self):
@@ -56,7 +61,7 @@ class LMPTimeseriesBase:
 
         # helper function for calc coefficients that calculates coefficients
         # for a node's children and then recursively calls the function for children nodes
-        def calc_coefficients_helper(node: LMP):
+        def calc_coefficients_helper(node: T):
             if node.next and node.coefficient:
                 child_coefficient = node.coefficient / len(node.next)
                 for child_node in node.next:
