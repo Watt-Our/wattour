@@ -15,7 +15,7 @@ class LMPTimeseriesGurobi(LMPTimeseriesBase):
     def __init__(self, cls: LMPTimeseriesBase):
         super().__init__()
         self.timeseries = cls.timeseries
-        self.lmp_decisions_vars = {}  # nodes are the keys, dictionary of decision variables
+        self.lmp_decisions_vars = {}  # nodes are the keys, namedtuples are the values
 
     def add_gurobi_vars(self, model):
         """Add gurobi decision variables to each node."""
