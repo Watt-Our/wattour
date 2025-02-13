@@ -4,7 +4,7 @@ from typing import Any, NamedTuple, Optional
 import gurobipy as gp
 from gurobipy import GRB
 
-from wattour.core import BatteryBase, LMPTimeseriesBase
+from wattour.core import BatteryBase
 
 from .lmp_timeseries_gurobi import LMPTimeseriesGurobi
 
@@ -19,12 +19,8 @@ class BatteryControlResult(NamedTuple):
 
 # LMPTimeseries has branches, this function will complete stochastic optimization
 def optimize_battery_control(
-    battery: BatteryBase, lmps: LMPTimeseriesBase, initial_soc: float = 0, final_soc: float = 0
+    battery: BatteryBase, lmps: LMPTimeseriesGurobi, initial_soc: float = 0, final_soc: float = 0
 ) -> BatteryControlResult:
-    if not isinstance(lmps, LMPTimeseriesGurobi):
-        # ugly, but temp
-        lmps = LMPTimeseriesGurobi(lmps)
-
     if lmps.timeseries.head is None:
         raise ValueError("Timeseries is empty")
 

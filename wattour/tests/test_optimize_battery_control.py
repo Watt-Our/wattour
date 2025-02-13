@@ -1,8 +1,8 @@
 import pandas as pd
 
-from wattour.core import LMPTimeseriesBase
 from wattour.core.battery import GenericBattery
 from wattour.optimization import optimize_battery_control
+from wattour.optimization.lmp_timeseries_gurobi import LMPTimeseriesGurobi
 
 # Create a battery object
 battery = GenericBattery(
@@ -57,12 +57,12 @@ lmps_5min = pd.DataFrame(
 )
 
 # Create a LMPTimeseries object
-lmp_timeseries = LMPTimeseriesBase()
+lmp_timeseries = LMPTimeseriesGurobi()
 lmp_timeseries.create_branch_from_df(lmps)
 lmp_timeseries.calc_coefficients()
 
 # Create a LMPTimeseries object with 5-minute data
-lmp_timeseries_5min = LMPTimeseriesBase()
+lmp_timeseries_5min = LMPTimeseriesGurobi()
 lmp_timeseries_5min.create_branch_from_df(lmps_5min)
 lmp_timeseries_5min.calc_coefficients()
 

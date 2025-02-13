@@ -1,20 +1,22 @@
 from typing import NamedTuple, Optional
+
 from gurobipy import Model, Var
 
 from wattour.core.battery import BatteryBase
 from wattour.core.lmp import LMP
 from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
 
+
 class LMPNodeDecisionVars(NamedTuple):
     soe: Var
-    charge: Optional[Var]
-    discharge: Optional[Var]
+    charge: Optional[Var] = None
+    discharge: Optional[Var] = None
+
 
 # hacky structure
 class LMPTimeseriesGurobi(LMPTimeseriesBase):
-    def __init__(self, cls: LMPTimeseriesBase):
+    def __init__(self):
         super().__init__()
-        self.timeseries = cls.timeseries
         self.lmp_decisions_vars = {}  # nodes are the keys, namedtuples are the values
 
     def add_gurobi_vars(self, model):
