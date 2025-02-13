@@ -19,7 +19,6 @@ class LMP(Node):
     def __post_init__(self):
         super().__init__()
 
-    # validate takes a Node of LMP but dk how to type rn
     def validate(self, prev: LMP) -> None:
         if not self.timestamp or not prev.timestamp:
             raise ValueError("All nodes must have a timestamp.")

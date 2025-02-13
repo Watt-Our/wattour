@@ -29,8 +29,6 @@ def transform(df: pd.DataFrame, column_map: dict[str, str]) -> pd.DataFrame:
 
 
 class LMPTimeseriesBase:
-    ts: Idk[LMP]
-
     def __init__(self):
         self.timeseries: Idk[LMP] = Idk()
 
