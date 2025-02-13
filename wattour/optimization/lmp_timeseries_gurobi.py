@@ -1,9 +1,14 @@
-from gurobipy import Model
+from typing import NamedTuple, Optional
+from gurobipy import Model, Var
 
 from wattour.core.battery import BatteryBase
 from wattour.core.lmp import LMP
 from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
 
+class LMPNodeDecisionVars(NamedTuple):
+    soe: Var
+    charge: Optional[Var]
+    discharge: Optional[Var]
 
 # hacky structure
 class LMPTimeseriesGurobi(LMPTimeseriesBase):
@@ -19,9 +24,13 @@ class LMPTimeseriesGurobi(LMPTimeseriesBase):
 
         def add_gurobi_vars_helper(model: Model, node: LMP):
             if node.dummy:
-                decision_vars = {"soe": model.addVar()}
+                decision_vars = LMPNodeDecisionVars(soe=model.addVar())
             else:
-                decision_vars = {"soe": model.addVar(), "charge": model.addVar(), "discharge": model.addVar()}
+                decision_vars = LMPNodeDecisionVars(
+                    soe=model.addVar(),
+                    charge=model.addVar(),
+                    discharge=model.addVar(),
+                )
             self.lmp_decisions_vars[node.id] = decision_vars
             for child_node in node.next:
                 add_gurobi_vars_helper(model, child_node)
@@ -43,32 +52,32 @@ class LMPTimeseriesGurobi(LMPTimeseriesBase):
 
         def generate_constraints_helper(node: LMP):
             # constraints
-            model.addConstr(self.lmp_decisions_vars[node.id]["soe"] <= max_soe)
+            model.addConstr(self.lmp_decisions_vars[node.id].soe <= max_soe)
             if node.dummy:
-                model.addConstr(self.lmp_decisions_vars[node.id]["soe"] >= min_final_soc * max_soe)
+                model.addConstr(self.lmp_decisions_vars[node.id].soe >= min_final_soc * max_soe)
                 return
-            model.addConstr(self.lmp_decisions_vars[node.id]["soe"] >= 0)
-            model.addConstr(self.lmp_decisions_vars[node.id]["charge"] <= max_charge)
-            model.addConstr(self.lmp_decisions_vars[node.id]["charge"] >= 0)
-            model.addConstr(self.lmp_decisions_vars[node.id]["discharge"] <= max_discharge)
-            model.addConstr(self.lmp_decisions_vars[node.id]["discharge"] >= 0)
+            model.addConstr(self.lmp_decisions_vars[node.id].soe >= 0)
+            model.addConstr(self.lmp_decisions_vars[node.id].charge <= max_charge)
+            model.addConstr(self.lmp_decisions_vars[node.id].charge >= 0)
+            model.addConstr(self.lmp_decisions_vars[node.id].discharge <= max_discharge)
+            model.addConstr(self.lmp_decisions_vars[node.id].discharge >= 0)
             for child_node in node.next:
                 if child_node.elapsed_time is None:
                     continue
 
                 model.addConstr(
-                    self.lmp_decisions_vars[child_node.id]["soe"]
-                    == self.lmp_decisions_vars[node.id]["soe"]
+                    self.lmp_decisions_vars[child_node.id].soe
+                    == self.lmp_decisions_vars[node.id].soe
                     + (
                         (
-                            self.lmp_decisions_vars[node.id]["charge"] * charge_eff
-                            - self.lmp_decisions_vars[node.id]["discharge"] / discharge_eff
+                            self.lmp_decisions_vars[node.id].charge * charge_eff
+                            - self.lmp_decisions_vars[node.id].discharge / discharge_eff
                         )
-                        - self.lmp_decisions_vars[node.id]["soe"] * battery.get_self_discharge_rate()
+                        - self.lmp_decisions_vars[node.id].soe * battery.get_self_discharge_rate()
                     )
                     * (child_node.elapsed_time.total_seconds() / 3600)
                 )
                 generate_constraints_helper(child_node)
 
-        model.addConstr(self.lmp_decisions_vars[self.timeseries.head.id]["soe"] == initial_soc * max_soe)
+        model.addConstr(self.lmp_decisions_vars[self.timeseries.head.id].soe == initial_soc * max_soe)
         generate_constraints_helper(self.timeseries.head)
