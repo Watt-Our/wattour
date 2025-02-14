@@ -7,7 +7,7 @@ import pandera as pa
 from pandas.api.types import is_numeric_dtype
 from pandera.typing import Series
 
-from wattour.core.utils.smth import Tree
+from wattour.core.utils.tree import Tree
 
 from .lmp import LMP
 
@@ -69,9 +69,3 @@ class LMPTimeseriesBase(Tree[LMP]):
         if self.head is None:
             return []
         return list(self.iter_nodes(show_dummy))
-
-    # TODO: this too prob
-    def __str__(self):
-        """Return a string representation of the LMPTimeseriesBase instance."""
-        return f"LMPTimeseriesBase: {self.size} nodes, \
-            {self.branches} branches, {self.dummy_nodes} dummy nodes"

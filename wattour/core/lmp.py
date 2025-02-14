@@ -17,6 +17,7 @@ class LMP(Node["LMP"]):
     coefficient: Optional[float] = None  # coefficient to weight given node (important in optimization)
 
     def __post_init__(self):
+        """Init Node parent."""
         super().__init__()
 
     def validate(self, prev: LMP) -> None:

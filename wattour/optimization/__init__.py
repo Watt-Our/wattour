@@ -1,2 +1,1 @@
-from .optimize_battery_control import optimize_battery_control, BatteryControlResult
-from .lmp_timeseries_gurobi import LMPTimeseriesGurobi
+from .optimize_battery_control import BatteryControlResult, optimize_battery_control

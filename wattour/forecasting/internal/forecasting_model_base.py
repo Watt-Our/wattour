@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from wattour.core.lmp import LMP
-from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
+# from wattour.core.lmp import LMP
+# from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
 
 
 class ForecastingModelBase(ABC):

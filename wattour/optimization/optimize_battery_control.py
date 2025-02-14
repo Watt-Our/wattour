@@ -1,5 +1,5 @@
 import time
-from typing import Any, NamedTuple, Optional, TypeGuard, TypeIs
+from typing import Any, NamedTuple, Optional, TypeIs
 from uuid import UUID
 
 import gurobipy as gp
@@ -24,7 +24,7 @@ class LMPDecisionVariables(NamedTuple):
     discharge: Optional[Var] = None
 
 
-def __create_gurobi_vars(timeseries: LMPTimeseriesBase, model: Model):
+def __create_gurobi_vars(timeseries: LMPTimeseriesBase, model: Model) -> dict[UUID, LMPDecisionVariables]:
     """Add gurobi decision variables to each node.
 
     Returns: dict with nodes as keys and decision tuple as values
@@ -42,7 +42,7 @@ def __create_gurobi_vars(timeseries: LMPTimeseriesBase, model: Model):
                 charge=model.addVar(),
                 discharge=model.addVar(),
             )
-        decisions_vars[node] = decision_var
+        decisions_vars[node.id] = decision_var
 
     return decisions_vars
 
@@ -80,17 +80,17 @@ def __generate_constraints(
         charge = decision_vars[node.id].charge
         discharge = decision_vars[node.id].discharge
 
-        if not is_model_var(decision_vars[node.id].charge):
-            raise ValueError("")
+        if not all(map(is_model_var, [soe, charge, discharge])):
+            raise ValueError("not a Var")
 
-        assert isinstance(decision_vars[node.id].charge, Var), "charge is not a Var"
-        assert isinstance(decision_vars[node.id].discharge, Var), "discharge is not a Var"
+        if not is_model_var(charge) or not is_model_var(discharge):
+            raise ValueError("not a Var")
 
         model.addConstr(decision_vars[node.id].soe >= 0)
-        model.addConstr(decision_vars[node.id].charge <= max_charge)
-        model.addConstr(decision_vars[node.id].charge >= 0)
-        model.addConstr(decision_vars[node.id].discharge <= max_discharge)
-        model.addConstr(decision_vars[node.id].discharge >= 0)
+        model.addConstr(charge <= max_charge)
+        model.addConstr(charge >= 0)
+        model.addConstr(discharge <= max_discharge)
+        model.addConstr(discharge >= 0)
         for child_node in node.next:
             if child_node.elapsed_time is None:
                 continue
@@ -99,10 +99,10 @@ def __generate_constraints(
                 decision_vars[child_node.id].soe
                 == decision_vars[node.id].soe
                 + (
-                    (decision_vars[node.id].charge * charge_eff - decision_vars[node.id].discharge / discharge_eff)
+                    (charge * charge_eff - discharge / discharge_eff)
                     - decision_vars[node.id].soe * battery.get_self_discharge_rate()
                 )
-                * (decision_vars[child_node].elapsed_time.total_seconds() / 3600)
+                * (child_node.elapsed_time.total_seconds() / 3600)
             )
             generate_constraints_helper(child_node)
 
@@ -134,8 +134,8 @@ def optimize_battery_control(
     # Objective function; charge and dischare are in power units
     model.setObjective(
         gp.quicksum(
-            (decision_vars[node_list[i]].discharge - decision_vars[node_list[i]].charge)
-            * (child_node.elapsed_time.total_seconds() / 3600)
+            (decision_vars[node_list[i].id].discharge - decision_vars[node_list[i].id].charge)  # type: ignore
+            * (child_node.elapsed_time.total_seconds() / 3600)  # type: ignore
             * child_node.coefficient
             * node_list[i].price
             for i in range(len(node_list))

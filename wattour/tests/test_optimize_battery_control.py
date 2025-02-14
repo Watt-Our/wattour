@@ -3,7 +3,6 @@ import pandas as pd
 from wattour.core.battery import GenericBattery
 from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
 from wattour.optimization import optimize_battery_control
-from wattour.optimization.lmp_timeseries_gurobi import LMPTimeseriesGurobi
 
 # Create a battery object
 battery = GenericBattery(

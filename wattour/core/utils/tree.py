@@ -26,7 +26,6 @@ class BaseNode(Generic[U], ABC):
 T = TypeVar("T", bound="Node")
 
 
-# TODO: broken
 class Node(BaseNode[T], ABC):
     # type of node that has value, validates input, and enriches input
 
@@ -48,8 +47,6 @@ class Node(BaseNode[T], ABC):
 #
 
 V = TypeVar("V", bound=Node)
-
-# functionality
 
 
 # this is a little wrong bc i want it to work for different types of nodes
@@ -108,3 +105,7 @@ class Tree(Generic[V]):
         self.dummy_nodes += branch.dummy_nodes
 
         node.next.append(branch.head)
+
+    def __str__(self):
+        """Return a str representation of Tree instance."""
+        return f"Tree: {self.size} nodes, {self.branches} branches, {self.dummy_nodes} dummy nodes"
