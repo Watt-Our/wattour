@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import datetime
-from typing import Generic, TypeVar
 
 import pandas as pd
 import pandera as pa
 from pandas.api.types import is_numeric_dtype
 from pandera.typing import Series
 
-from wattour.core.utils.smth import Idk
+from wattour.core.utils.smth import Tree
 
 from .lmp import LMP
 
@@ -29,13 +28,9 @@ def transform(df: pd.DataFrame, column_map: dict[str, str]) -> pd.DataFrame:
     return new_df
 
 
-T = TypeVar("T", bound=LMP)
-
-
-class LMPTimeseriesBase(Generic[T]):
-    def __init__(self, node_cls: type[T] = LMP):
-        self.timeseries: Idk[T] = Idk()
-        self.node_cls = node_cls
+class LMPTimeseriesBase(Tree[LMP]):
+    def __init__(self):
+        super().__init__()
 
     def create_branch_from_df(self, lmp_df: pd.DataFrame, add_dummy: bool = True) -> None:
         """Populate the lmptimeseries from a dataframe (must be single link).
@@ -47,38 +42,36 @@ class LMPTimeseriesBase(Generic[T]):
             raise ValueError("The lmp_df DataFrame has no rows.")
 
         for _, row in lmp_df.iterrows():
-            self.timeseries.append(self.node_cls(timestamp=row["timestamp"], price=row["price"]))
+            self.append(LMP(timestamp=row["timestamp"], price=row["price"]))
 
-        if add_dummy and self.timeseries.tail:
-            self.timeseries.append_dummy(
-                self.node_cls(price=0, timestamp=self.timeseries.tail.timestamp + datetime.timedelta(hours=1))
-            )
+        if add_dummy and self.tail:
+            self.append_dummy(LMP(price=0, timestamp=self.tail.timestamp + datetime.timedelta(hours=1)))
 
     def calc_coefficients(self):
         """Calculate coefficients based on branching to prevent overweighting timesteps with lots of branches."""
-        if self.timeseries.head is None:
+        if self.head is None:
             raise ValueError("Timeseries is empty")
 
         # helper function for calc coefficients that calculates coefficients
         # for a node's children and then recursively calls the function for children nodes
-        def calc_coefficients_helper(node: T):
+        def calc_coefficients_helper(node: LMP):
             if node.next and node.coefficient:
                 child_coefficient = node.coefficient / len(node.next)
                 for child_node in node.next:
                     child_node.coefficient = child_coefficient
                     calc_coefficients_helper(child_node)
 
-        self.timeseries.head.coefficient = 1.0
-        calc_coefficients_helper(self.timeseries.head)
+        self.head.coefficient = 1.0
+        calc_coefficients_helper(self.head)
 
-    def get_node_list(self, show_dummy: bool = True) -> list:
+    def get_node_list(self, show_dummy: bool = True) -> list[LMP]:
         """Create a list of all node objects."""
-        if self.timeseries.head is None:
+        if self.head is None:
             return []
-        return list(self.timeseries.iter_nodes(show_dummy))
+        return list(self.iter_nodes(show_dummy))
 
     # TODO: this too prob
     def __str__(self):
         """Return a string representation of the LMPTimeseriesBase instance."""
-        return f"LMPTimeseriesBase: {self.timeseries.size} nodes, \
-            {self.timeseries.branches} branches, {self.timeseries.dummy_nodes} dummy nodes"
+        return f"LMPTimeseriesBase: {self.size} nodes, \
+            {self.branches} branches, {self.dummy_nodes} dummy nodes"

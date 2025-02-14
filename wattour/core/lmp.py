@@ -4,13 +4,13 @@ import datetime
 from dataclasses import dataclass
 from typing import Optional
 
-from wattour.core.utils.smth import Node
+from wattour.core.utils.tree import Node
 
 
 # helper class for individual nodes (linked list / graph)
 # TODO: we should make as many params required as possible
 @dataclass
-class LMP(Node):
+class LMP(Node["LMP"]):
     price: float  # presumably $ / MW
     timestamp: datetime.datetime
     elapsed_time: Optional[datetime.timedelta] = None  # time that elapsed between previous node and this one

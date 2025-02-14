@@ -5,11 +5,10 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import Generator, Generic, Optional, Self, TypeVar
 
-T = TypeVar("T")
-U = TypeVar("U")
+U = TypeVar("U", bound="BaseNode")
 
 
-class BaseNode(ABC, Generic[T, U]):
+class BaseNode(Generic[U], ABC):
     def __init__(self):
         self.id = uuid.uuid4()
         self.next: list[U] = []
@@ -24,9 +23,11 @@ class BaseNode(ABC, Generic[T, U]):
 
 #
 
+T = TypeVar("T", bound="Node")
+
 
 # TODO: broken
-class Node(BaseNode[T, Self], ABC):
+class Node(BaseNode[T], ABC):
     # type of node that has value, validates input, and enriches input
 
     def __init__(self, is_dummy: bool = False):
@@ -48,9 +49,11 @@ class Node(BaseNode[T, Self], ABC):
 
 V = TypeVar("V", bound=Node)
 
+# functionality
+
 
 # this is a little wrong bc i want it to work for different types of nodes
-class Idk(Generic[V]):
+class Tree(Generic[V]):
     def __init__(self):
         self.head: Optional[V] = None
         self.tail: Optional[V] = None

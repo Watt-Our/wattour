@@ -1,5 +1,6 @@
 import time
-from typing import Any, NamedTuple, Optional
+from typing import Any, NamedTuple, Optional, TypeGuard, TypeIs
+from uuid import UUID
 
 import gurobipy as gp
 from gurobipy import GRB, Model, Var
@@ -8,20 +9,20 @@ from wattour.core import BatteryBase
 from wattour.core.lmp import LMP
 from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
 
-from .lmp_timeseries_gurobi import LMPTimeseriesGurobi
-
 
 class BatteryControlResult(NamedTuple):
     status_num: int
-    lmp_timeseries: LMPTimeseriesGurobi
+    lmp_timeseries: LMPTimeseriesBase
     objective_value: Optional[Any] = None
     runtime: Optional[float] = None
     model: Optional[gp.Model] = None
 
+
 class LMPDecisionVariables(NamedTuple):
-    soe: float
-    charge: float
-    discharge: float
+    soe: Var
+    charge: Optional[Var] = None
+    discharge: Optional[Var] = None
+
 
 def __create_gurobi_vars(timeseries: LMPTimeseriesBase, model: Model):
     """Add gurobi decision variables to each node.
@@ -45,8 +46,14 @@ def __create_gurobi_vars(timeseries: LMPTimeseriesBase, model: Model):
 
     return decisions_vars
 
+
 def __generate_constraints(
-    timeseries: LMPTimeseriesBase, decision_vars: dict, model: Model, battery: BatteryBase, initial_soc: float = 0, min_final_soc: float = 0
+    timeseries: LMPTimeseriesBase,
+    decision_vars: dict[UUID, LMPDecisionVariables],
+    model: Model,
+    battery: BatteryBase,
+    initial_soc: float = 0,
+    min_final_soc: float = 0,
 ):
     """Generate constraints for a gurobi optimization problem."""
     if timeseries.head is None:
@@ -58,38 +65,48 @@ def __generate_constraints(
     charge_eff = battery.get_charge_efficiency()
     discharge_eff = battery.get_discharge_efficiency()
 
+    def is_model_var(a: object) -> TypeIs[Var]:
+        return a is not None and isinstance(a, Var)
+
     def generate_constraints_helper(node: LMP):
         # constraints
-        model.addConstr(decision_vars[node].soe <= max_soe)
+        model.addConstr(decision_vars[node.id].soe <= max_soe)
         if node.dummy:
-            model.addConstr(decision_vars[node].soe >= min_final_soc * max_soe)
+            model.addConstr(decision_vars[node.id].soe >= min_final_soc * max_soe)
             return
 
         # for typing, for now
-        assert isinstance(decision_vars[node].charge, Var), "charge is not a Var"
-        assert isinstance(decision_vars[node].discharge, Var), "discharge is not a Var"
+        soe = decision_vars[node.id].soe
+        charge = decision_vars[node.id].charge
+        discharge = decision_vars[node.id].discharge
 
-        model.addConstr(decision_vars[node].soe >= 0)
-        model.addConstr(decision_vars[node].charge <= max_charge)
-        model.addConstr(decision_vars[node].charge >= 0)
-        model.addConstr(decision_vars[node].discharge <= max_discharge)
-        model.addConstr(decision_vars[node].discharge >= 0)
+        if not is_model_var(decision_vars[node.id].charge):
+            raise ValueError("")
+
+        assert isinstance(decision_vars[node.id].charge, Var), "charge is not a Var"
+        assert isinstance(decision_vars[node.id].discharge, Var), "discharge is not a Var"
+
+        model.addConstr(decision_vars[node.id].soe >= 0)
+        model.addConstr(decision_vars[node.id].charge <= max_charge)
+        model.addConstr(decision_vars[node.id].charge >= 0)
+        model.addConstr(decision_vars[node.id].discharge <= max_discharge)
+        model.addConstr(decision_vars[node.id].discharge >= 0)
         for child_node in node.next:
             if child_node.elapsed_time is None:
                 continue
 
             model.addConstr(
-                decision_vars[child_node].soe
-                == decision_vars[node].soe
+                decision_vars[child_node.id].soe
+                == decision_vars[node.id].soe
                 + (
-                    (decision_vars[node].charge * charge_eff - decision_vars[node].discharge / discharge_eff)
-                    - decision_vars[node].soe * battery.get_self_discharge_rate()
+                    (decision_vars[node.id].charge * charge_eff - decision_vars[node.id].discharge / discharge_eff)
+                    - decision_vars[node.id].soe * battery.get_self_discharge_rate()
                 )
                 * (decision_vars[child_node].elapsed_time.total_seconds() / 3600)
             )
             generate_constraints_helper(child_node)
 
-    model.addConstr(timeseries.head.soe == initial_soc * max_soe)
+    model.addConstr(decision_vars[timeseries.head.id].soe == initial_soc * max_soe)
     generate_constraints_helper(timeseries.head)
 
 
