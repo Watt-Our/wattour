@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import datetime
-from typing import Optional, overload
+from typing import Optional, Self, overload
 
+from matplotlib import pyplot as plt
 import pandas as pd
 import pandera as pa
 from pandas.api.types import is_numeric_dtype
@@ -31,12 +32,10 @@ def transform(df: pd.DataFrame, column_map: dict[str, str]) -> pd.DataFrame:
 
 class LMPTimeseriesBase(Tree[LMP]):
     @overload
-    def __init__(self) -> None:
-        ...
+    def __init__(self) -> None: ...
 
     @overload
-    def __init__(self, head: LMP) -> None:
-        ...
+    def __init__(self, head: LMP) -> None: ...
 
     def __init__(self, head: Optional[LMP] = None) -> None:
         super().__init__()
@@ -49,7 +48,7 @@ class LMPTimeseriesBase(Tree[LMP]):
             self.size = 0
             self.branches = 0
 
-    def create_branch_from_df(self, lmp_df: pd.DataFrame, add_dummy: bool = True) -> None:
+    def create_branch_from_df(self, lmp_df: pd.DataFrame, add_dummy: bool = True) -> Self:
         """Populate the lmptimeseries from a dataframe (must be single link).
 
         Dataframe format must be [timestamp, lmp]. Returns the final node in the branch.
@@ -71,6 +70,8 @@ class LMPTimeseriesBase(Tree[LMP]):
         if add_dummy:
             self.append_dummy(prev_node, prev_node.elapsed_time)
 
+        return self
+
     def calc_coefficients(self):
         """Calculate coefficients based on branching to prevent overweighting timesteps with lots of branches."""
         if self.head is None:
@@ -90,7 +91,9 @@ class LMPTimeseriesBase(Tree[LMP]):
 
     def append_dummy(self, existing_node: LMP, elapsed_time: datetime.timedelta) -> None:
         """Append a dummy node to the existing node."""
-        super().append_dummy(existing_node, LMP(price=0, timestamp=existing_node.timestamp + elapsed_time, is_dummy=True))
+        super().append_dummy(
+            existing_node, LMP(price=0, timestamp=existing_node.timestamp + elapsed_time, is_dummy=True)
+        )
 
     def weight_coefficients(self, weight: float) -> None:
         """Multiply the coefficients of the nodes by a weight."""
@@ -106,3 +109,21 @@ class LMPTimeseriesBase(Tree[LMP]):
         if self.head is None:
             return []
         return list(self.iter_nodes(show_dummy))
+
+    def plot(self) -> None:
+        """Plot the timeseries with connections between each parent and child node."""
+        if self.head is None:
+            raise ValueError("Timeseries is empty")
+
+        def plot_node(node: LMP, parent_timestamp: Optional[datetime.datetime] = None, parent_price: Optional[float] = None):
+            if parent_timestamp is not None and parent_price is not None:
+                plt.plot([parent_timestamp, node.timestamp], [parent_price, node.price], 'b-')
+            for child in node.next:
+                if not child.dummy:
+                    plot_node(child, node.timestamp, node.price)
+
+        plot_node(self.head)
+        plt.xticks(rotation=90)
+        plt.xlabel('Timestamp')
+        plt.ylabel('Price')
+        plt.show()
