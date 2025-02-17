@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import datetime
-from typing import Optional, Self, overload
+from typing import Optional, Self
 
-from matplotlib import pyplot as plt
 import pandas as pd
 import pandera as pa
+from matplotlib import pyplot as plt
 from pandas.api.types import is_numeric_dtype
 from pandera.typing import Series
 
@@ -31,22 +31,8 @@ def transform(df: pd.DataFrame, column_map: dict[str, str]) -> pd.DataFrame:
 
 
 class LMPTimeseriesBase(Tree[LMP]):
-    @overload
-    def __init__(self) -> None: ...
-
-    @overload
-    def __init__(self, head: LMP) -> None: ...
-
-    def __init__(self, head: Optional[LMP] = None) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        if head is not None:
-            self.head = head
-            self.size = 1
-            self.branches = 1
-        else:
-            self.head = None
-            self.size = 0
-            self.branches = 0
 
     def create_branch_from_df(self, lmp_df: pd.DataFrame, add_dummy: bool = True) -> Self:
         """Populate the lmptimeseries from a dataframe (must be single link).
@@ -59,16 +45,17 @@ class LMPTimeseriesBase(Tree[LMP]):
 
         prev_node = None
         for _, row in lmp_df.iterrows():
-            if prev_node is None:
-                self.head = LMP(timestamp=row["timestamp"], price=row["price"])
-                prev_node = self.head
-                continue
             cur_node = LMP(timestamp=row["timestamp"], price=row["price"])
             self.append(prev_node, cur_node)
             prev_node = cur_node
 
-        if add_dummy:
-            self.append_dummy(prev_node, prev_node.elapsed_time)
+        if add_dummy and prev_node:
+            if not prev_node.elapsed_time:
+                raise ValueError("Previous node does not have an elapsed time")
+
+            self.append_dummy(
+                prev_node, LMP(price=0, timestamp=prev_node.timestamp + prev_node.elapsed_time, is_dummy=True)
+            )
 
         return self
 
@@ -88,12 +75,6 @@ class LMPTimeseriesBase(Tree[LMP]):
 
         self.head.coefficient = 1.0
         calc_coefficients_helper(self.head)
-
-    def append_dummy(self, existing_node: LMP, elapsed_time: datetime.timedelta) -> None:
-        """Append a dummy node to the existing node."""
-        super().append_dummy(
-            existing_node, LMP(price=0, timestamp=existing_node.timestamp + elapsed_time, is_dummy=True)
-        )
 
     def weight_coefficients(self, weight: float) -> None:
         """Multiply the coefficients of the nodes by a weight."""
@@ -115,15 +96,17 @@ class LMPTimeseriesBase(Tree[LMP]):
         if self.head is None:
             raise ValueError("Timeseries is empty")
 
-        def plot_node(node: LMP, parent_timestamp: Optional[datetime.datetime] = None, parent_price: Optional[float] = None):
+        def plot_node(
+            node: LMP, parent_timestamp: Optional[datetime.datetime] = None, parent_price: Optional[float] = None
+        ):
             if parent_timestamp is not None and parent_price is not None:
-                plt.plot([parent_timestamp, node.timestamp], [parent_price, node.price], 'b-')
+                plt.plot([parent_timestamp, node.timestamp], [parent_price, node.price], "b-")  # type: ignore
             for child in node.next:
                 if not child.dummy:
                     plot_node(child, node.timestamp, node.price)
 
         plot_node(self.head)
         plt.xticks(rotation=90)
-        plt.xlabel('Timestamp')
-        plt.ylabel('Price')
+        plt.xlabel("Timestamp")
+        plt.ylabel("Price")
         plt.show()

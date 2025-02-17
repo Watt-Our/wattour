@@ -1,7 +1,6 @@
 import time
 from abc import abstractmethod
 from pathlib import Path
-from typing import overload
 
 import numpy as np
 import pandas as pd
@@ -143,7 +142,7 @@ class XGBRegressorBase(ForecastingModelBase):
                 result_df[f"price_{len(result_df.columns) - 1}"] = pred
 
         return result_df
-    
+
     def predict_to_list(self, df: pd.DataFrame, **kwargs) -> list[LMPTimeseriesBase]:
         predictions = self.predict_to_df(df, **kwargs)
         timeseries = []
@@ -151,21 +150,20 @@ class XGBRegressorBase(ForecastingModelBase):
         if kwargs.get("average", False):
             lmps = LMPTimeseriesBase().create_branch_from_df(predictions)
             timeseries.append(lmps)
-        else: 
+        else:
             for i in range(0, len(predictions.columns) - 1):
                 temp_df = predictions[["timestamp", f"price_{i}"]].rename(columns={f"price_{i}": "price"})
                 lmps = LMPTimeseriesBase().create_branch_from_df(temp_df)
                 timeseries.append(lmps)
 
         return timeseries
-    
+
     # all predictions will be connected to the head node
     def predict(self, head: LMP, df: pd.DataFrame, **kwargs) -> LMPTimeseriesBase:
-        timeseries = LMPTimeseriesBase(head)
+        timeseries = LMPTimeseriesBase()
+        timeseries.append(None, head)
         for branch in self.predict_to_list(df, **kwargs):
             timeseries.add_branch(head, branch)
 
         timeseries.calc_coefficients()
         return timeseries
-
-    

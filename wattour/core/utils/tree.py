@@ -3,7 +3,7 @@ from __future__ import annotations
 import collections
 import uuid
 from abc import ABC, abstractmethod
-from typing import Generator, Generic, Optional, Self, TypeVar, overload
+from typing import Generator, Generic, Optional, Self, TypeVar
 
 U = TypeVar("U", bound="BaseNode")
 
@@ -53,21 +53,30 @@ V = TypeVar("V", bound=Node)
 class Tree(Generic[V]):
     def __init__(self):
         self.head: Optional[V] = None
-        self.size = 0 # excludes dummies
+        self.size = 0  # excludes dummies
         self.branches = 0
         self.dummy_nodes = 0
 
     # ^^ i think append (or a prelude) will just become polymorphic and V will be bound to different node types
-    def append(self, existing_node: V, new_node: V):
-        new_node.validate(existing_node)
-        new_node.enrich(existing_node)
-        existing_node.add(new_node)
+    def append(self, existing_node: V | None, new_node: V):
+        if not existing_node:
+            if self.head:
+                raise ValueError("Tree already has a head")
+            self.head = new_node
+        else:
+            new_node.validate(existing_node)
+            new_node.enrich(existing_node)
+            existing_node.add(new_node)
+
+            if len(existing_node.next) > 1:
+                self.branches += 1
 
         self.size += 1
-        if len(existing_node.next) > 1:
-            self.branches += 1
 
     def append_dummy(self, existing_node: V, dummy_node: V):
+        if not dummy_node.is_dummy:
+            raise ValueError("new_node must have is_dummy=True")
+
         self.append(existing_node, dummy_node)
         self.dummy_nodes += 1
 
@@ -101,13 +110,13 @@ class Tree(Generic[V]):
 
     # mutating
     @staticmethod
-    def merge_trees(first_tree: Self, second_tree: Self) -> Self:
+    def merge_trees(first_tree: Tree[V], second_tree: Tree[V]) -> Tree[V]:
         """Merge two trees into one (combining the heads). Head of first tree will be the head of the merged tree."""
         if not first_tree.head:
             return second_tree
         if not second_tree.head:
             return first_tree
-        
+
         if second_tree.head.next:
             if first_tree.head.next:
                 first_tree.branches += 1
