@@ -162,7 +162,7 @@ class XGBRegressorBase(ForecastingModelBase):
     # all predictions will be connected to the head node
     def predict(self, head: LMP, df: pd.DataFrame, **kwargs) -> LMPTimeseriesBase:
         timeseries = LMPTimeseriesBase(head)
-        for branch in self.predict(df, **kwargs):
+        for branch in self.predict_to_list(df, **kwargs):
             timeseries.add_branch(head, branch)
 
         timeseries.calc_coefficients()
