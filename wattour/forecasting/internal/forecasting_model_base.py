@@ -1,7 +1,11 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import overload
 
 import pandas as pd
+
+from wattour.core.lmp import LMP
+from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
 
 # from wattour.core.lmp import LMP
 # from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
@@ -9,9 +13,9 @@ import pandas as pd
 
 class ForecastingModelBase(ABC):
     @abstractmethod
-    def load(self, paths: list[Path] | Path):
+    def predict(head: LMP, df:pd.DataFrame) -> LMPTimeseriesBase:
         pass
 
     @abstractmethod
-    def predict(self, df: pd.DataFrame) -> pd.DataFrame:
+    def load(self, paths: list[Path] | Path):
         pass
