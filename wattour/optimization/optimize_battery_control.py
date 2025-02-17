@@ -10,18 +10,18 @@ from wattour.core.lmp import LMP
 from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
 
 
+class LMPDecisionVariables(NamedTuple):
+    soe: Var
+    charge: Optional[Var] = None
+    discharge: Optional[Var] = None
+
 class BatteryControlResult(NamedTuple):
     status_num: int
     lmp_timeseries: LMPTimeseriesBase
     objective_value: Optional[Any] = None
     runtime: Optional[float] = None
     model: Optional[gp.Model] = None
-
-
-class LMPDecisionVariables(NamedTuple):
-    soe: Var
-    charge: Optional[Var] = None
-    discharge: Optional[Var] = None
+    decision_vars: Optional[dict[UUID, LMPDecisionVariables]] = None
 
 
 def __create_gurobi_vars(timeseries: LMPTimeseriesBase, model: Model) -> dict[UUID, LMPDecisionVariables]:
@@ -160,6 +160,7 @@ def optimize_battery_control(
             runtime=end_time - start_time,
             model=model,
             lmp_timeseries=lmps,
+            decision_vars=decision_vars,
         )
     else:
         return BatteryControlResult(
