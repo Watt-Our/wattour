@@ -15,10 +15,11 @@ class LMP(Node["LMP"]):
     timestamp: datetime.datetime
     elapsed_time: Optional[datetime.timedelta] = None  # time that elapsed between previous node and this one
     coefficient: Optional[float] = None  # coefficient to weight given node (important in optimization)
+    is_dummy: bool = False
 
     def __post_init__(self):
         """Init Node parent."""
-        super().__init__()
+        super().__init__(self.is_dummy)
 
     def validate(self, prev: LMP) -> None:
         if not self.timestamp or not prev.timestamp:
