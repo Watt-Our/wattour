@@ -63,6 +63,7 @@ class Tree(Generic[V]):
             if self.head:
                 raise ValueError("Tree already has a head")
             self.head = new_node
+            self.branches += 1
         else:
             new_node.validate(existing_node)
             new_node.enrich(existing_node)
