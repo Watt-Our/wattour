@@ -95,6 +95,7 @@ def get_lmps(
     return pd.DataFrame(data_rows)
 
 
+# make this more abstract
 def get_node_fivemin(pnode_id: str) -> pd.DataFrame:
     """Get a node's rt 5min LMP data for a specified time period."""
     base_req_url = f"{PJM_API}/rt_fivemin_hrl_lmps"
@@ -102,13 +103,13 @@ def get_node_fivemin(pnode_id: str) -> pd.DataFrame:
     params = {
         "download": False,
         "pnode_id": pnode_id,
-        "datetime_beginning_utc": "Yesterday",
+        "datetime_beginning_utc": "CurrentHour",
         "fields": ",".join(COMMON_LMP_ALLOWED_FIELDS + RT_LMP_ALLOWED_FIELDS),
     }
 
     df = get_lmps(
         base_req_url,
-        "Yesterday",
+        "Today",
         COMMON_LMP_ALLOWED_FIELDS + RT_LMP_ALLOWED_FIELDS,
         params=params,
     )

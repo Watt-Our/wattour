@@ -11,7 +11,6 @@ from pandera.typing import Series
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import TimeSeriesSplit
 
-from wattour.core.lmp import LMP
 from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
 from wattour.forecasting.internal.forecasting_model_base import ForecastingModelBase
 
@@ -27,6 +26,7 @@ class XGBRegressorBase(ForecastingModelBase):
         self.regs = []
 
     @abstractmethod
+    # make static @staticmethod
     def create_features(self, _df: pd.DataFrame):
         """Create features for the model. This super implementation includes time features."""
         df = _df.copy()
@@ -159,17 +159,15 @@ class XGBRegressorBase(ForecastingModelBase):
         return timeseries
 
     # all predictions will be connected to the head node
-    def predict(self, head: LMP, df: pd.DataFrame, **kwargs) -> LMPTimeseriesBase:
+    # FIXME: @carterjc lift kwargs to named args
+    def predict(self, tree: LMPTimeseriesBase, df: pd.DataFrame, **kwargs) -> None:
         predictions = self.predict_to_df(df, **kwargs)
-        timeseries = LMPTimeseriesBase()
-        timeseries.head = head
 
         if kwargs.get("average", False):
-            timeseries.create_branch_from_df(predictions, add_dummy=True, on_node=head)
+            tree.create_branch_from_df(predictions, add_dummy=True, on_node=tree.head)
         else:
             for i in range(0, len(predictions.columns) - 1):
                 temp_df = predictions[["timestamp", f"price_{i}"]].rename(columns={f"price_{i}": "price"})
-                timeseries.create_branch_from_df(temp_df, add_dummy=True, on_node=head)
+                tree.create_branch_from_df(temp_df, add_dummy=True, on_node=tree.head)
 
-        timeseries.calc_coefficients()
-        return timeseries
+        tree.calc_coefficients()
