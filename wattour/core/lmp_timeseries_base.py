@@ -34,7 +34,7 @@ class LMPTimeseriesBase(Tree[LMP]):
     def __init__(self) -> None:
         super().__init__()
 
-    def create_branch_from_df(self, lmp_df: pd.DataFrame, add_dummy: bool = True) -> Self:
+    def create_branch_from_df(self, lmp_df: pd.DataFrame, add_dummy: bool = True, on_node: LMP = None) -> Self:
         """Populate the lmptimeseries from a dataframe (must be single link).
 
         Dataframe format must be [timestamp, lmp]. Returns the final node in the branch.
@@ -43,7 +43,7 @@ class LMPTimeseriesBase(Tree[LMP]):
         if lmp_df.empty:
             raise ValueError("The lmp_df DataFrame has no rows.")
 
-        prev_node = None
+        prev_node = on_node
         for _, row in lmp_df.iterrows():
             cur_node = LMP(timestamp=row["timestamp"], price=row["price"])
             self.append(prev_node, cur_node)

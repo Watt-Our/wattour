@@ -160,10 +160,16 @@ class XGBRegressorBase(ForecastingModelBase):
 
     # all predictions will be connected to the head node
     def predict(self, head: LMP, df: pd.DataFrame, **kwargs) -> LMPTimeseriesBase:
+        predictions = self.predict_to_df(df, **kwargs)
         timeseries = LMPTimeseriesBase()
-        timeseries.append(None, head)
-        for branch in self.predict_to_list(df, **kwargs):
-            timeseries.add_branch(head, branch)
+        timeseries.head = head
+
+        if kwargs.get("average", False):
+            timeseries.create_branch_from_df(predictions, add_dummy=True, on_node=head)
+        else:
+            for i in range(0, len(predictions.columns) - 1):
+                temp_df = predictions[["timestamp", f"price_{i}"]].rename(columns={f"price_{i}": "price"})
+                timeseries.create_branch_from_df(temp_df, add_dummy=True, on_node=head)
 
         timeseries.calc_coefficients()
         return timeseries
