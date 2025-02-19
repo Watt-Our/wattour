@@ -1,18 +1,15 @@
-import datetime
 import logging
 import os
 import time
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Any, Callable
 
 import dotenv
 import pandas as pd
-from pytz import timezone
 import requests
 
 from wattour.forecasting.pjm.utils.constants import (
     BATCH_SIZE,
-    BEGIN_DATE_ALLOWED_VALUES,
     COMMON_LMP_ALLOWED_FIELDS,
     RT_LMP_ALLOWED_FIELDS,
 )
@@ -46,24 +43,12 @@ def create_csv(func: Callable[..., pd.DataFrame], output_file_path: str):
     return helper
 
 
-def get_lmps(
-    base_req_url: str,
-    start_time: BEGIN_DATE_ALLOWED_VALUES,
-    lmp_allowed_fields: list[str],
-    zone: Optional[str] = None,
-    **kwargs,
-):
-    """Fetch LMP data from PJM API in batches."""
-    # LastYear, PSEG returns 6642349 rows - with batches of 50k this is ~120 requests, at 6req/min for ~20 minutes
-    params = {
-        "download": False,
-        "datetime_beginning_utc": start_time,
-        "fields": ",".join(lmp_allowed_fields),
-        **kwargs.get("params", {}),
-    }
-    if zone is not None:
-        params["zone"] = zone
+def get_pjm(base_req_url: str, params: dict[str, Any]):
+    """Fetch data from PJM API endpoints in batches.
 
+    This is intended to be used in wrapper functions for particular PJM endpoints.
+    """
+    # LastYear, PSEG returns 6642349 rows - with batches of 50k this is ~120 requests, at 6req/min for ~20 minutes
     sleep_rate_limit = 60 / PJM_RATE_LIMIT
 
     # need rowCount (max 50k) and startRow (1-indexed)
@@ -110,16 +95,11 @@ def get_node_fivemin(pnode_id: str) -> pd.DataFrame:
     params = {
         "download": False,
         "pnode_id": pnode_id,
-        "datetime_beginning_utc": "CurrentHour",
+        "datetime_beginning_utc": "Today",
         "fields": ",".join(COMMON_LMP_ALLOWED_FIELDS + RT_LMP_ALLOWED_FIELDS),
     }
 
-    df = get_lmps(
-        base_req_url,
-        "Today",
-        COMMON_LMP_ALLOWED_FIELDS + RT_LMP_ALLOWED_FIELDS,
-        params=params,
-    )
+    df = get_pjm(base_req_url, params)
     if df.empty:
         raise PJMError("No data received for given node.")
 
@@ -129,6 +109,17 @@ def get_node_fivemin(pnode_id: str) -> pd.DataFrame:
 # TODO: this function should get the latest available (unverified) lmp price for a given node
 # and return a tuple with (datetime, price) with datetime in UTC
 def get_latest_price(pnode_id: str):
-    now = datetime.datetime.now(tz = timezone("UTC"))
-    rounded_now = now - datetime.timedelta(minutes=now.minute % 5, seconds=now.second, microseconds=now.microsecond)
-    return rounded_now, 0.0
+    """Somehting."""
+    base_req_url = f"{PJM_API}/rt_unverified_fivemin_lmps"
+
+    fields = "congestion_price_rt,datetime_beginning_ept,datetime_beginning_utc,marginal_loss_price_rt,occ_check,pnode_id,pnode_name,ref_caseid_used_multi_interval,total_lmp_rt,type"  # noqa: E501
+
+    # note: Today returns the current time (rounded down to nearest 5) but CurrentHour returns top of the hour (xx:55)
+    params = {"download": False, "pnode_id": pnode_id, "datetime_beginning_utc": "CurrentHour", "fields": fields}
+    df = get_pjm(base_req_url, params)
+    last = df.iloc[-1]
+    return last["datetime_beginning_utc"], last["total_lmp_rt"]
+
+
+# https://github.com/gridstatus/gridstatus/blob/main/gridstatus/decorators.py
+# https://github.com/gridstatus/gridstatus/blob/main/gridstatus/pjm.py
