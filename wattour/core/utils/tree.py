@@ -88,7 +88,9 @@ class Tree(Generic[V]):
             new_node.next = new_children
             return new_node
 
-        new_head = copy_helper(self.head)
+        new_head = None
+        if self.head is not None:
+            new_head = copy_helper(self.head)
         new_tree.head = new_head
         new_tree.size = self.size
         new_tree.branches = self.branches
@@ -132,7 +134,7 @@ class Tree(Generic[V]):
 
     # mutating
     @staticmethod
-    def merge_trees(first_tree: Tree[V], second_tree: Tree[V]) -> Self:
+    def merge_trees(first_tree: Tree[V], second_tree: Tree[V]) -> Tree[V]:
         """Merge two trees into one (combining the heads). Head of first tree will be the head of the merged tree."""
         if not first_tree.head:
             return second_tree
