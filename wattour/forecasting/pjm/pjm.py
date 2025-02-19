@@ -7,9 +7,15 @@ from typing import Callable, Optional
 
 import dotenv
 import pandas as pd
+from pytz import timezone
 import requests
 
-from .constants import BATCH_SIZE, BEGIN_DATE_ALLOWED_VALUES, COMMON_LMP_ALLOWED_FIELDS, RT_LMP_ALLOWED_FIELDS
+from wattour.forecasting.pjm.utils.constants import (
+    BATCH_SIZE,
+    BEGIN_DATE_ALLOWED_VALUES,
+    COMMON_LMP_ALLOWED_FIELDS,
+    RT_LMP_ALLOWED_FIELDS,
+)
 
 dotenv.load_dotenv()
 
@@ -121,6 +127,8 @@ def get_node_fivemin(pnode_id: str) -> pd.DataFrame:
 
 
 # TODO: this function should get the latest available (unverified) lmp price for a given node
-# and return a tuple with (datetime, price)
+# and return a tuple with (datetime, price) with datetime in UTC
 def get_latest_price(pnode_id: str):
-    return datetime.now(), 0.0
+    now = datetime.datetime.now(tz = timezone("UTC"))
+    rounded_now = now - datetime.timedelta(minutes=now.minute % 5, seconds=now.second, microseconds=now.microsecond)
+    return rounded_now, 0.0
