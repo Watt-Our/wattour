@@ -132,7 +132,7 @@ class Tree(Generic[V]):
 
     # mutating
     @staticmethod
-    def merge_trees(first_tree: Tree[V], second_tree: Tree[V]) -> Tree[V]:
+    def merge_trees(first_tree: Tree[V], second_tree: Tree[V]) -> Self:
         """Merge two trees into one (combining the heads). Head of first tree will be the head of the merged tree."""
         if not first_tree.head:
             return second_tree
