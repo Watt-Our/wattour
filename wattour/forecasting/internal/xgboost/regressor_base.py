@@ -160,7 +160,7 @@ class XGBRegressorBase(ForecastingModelBase):
 
     # all predictions will be connected to the head node; mutates and returns
     # FIXME: @carterjc lift kwargs to named args
-    def predict(self, tree: LMPTimeseriesBase, df: pd.DataFrame, **kwargs) -> None:
+    def predict(self, tree: LMPTimeseriesBase, df: pd.DataFrame, **kwargs) -> LMPTimeseriesBase:
         predictions = self.predict_to_df(df, **kwargs)
 
         if kwargs.get("average", False):
