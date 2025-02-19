@@ -17,7 +17,7 @@ battery = GenericBattery(
 # Create a hourly sample LMP data
 lmps = pd.DataFrame(
     {
-        "timestamp": pd.date_range("2021-01-01", periods=11, freq="h"),
+        "timestamp": pd.date_range("2021-01-01", periods=11, freq="h", tz="UTC"),
         "price": [0, 0, 0, 0, 0, 0, 100, 0, 100, 0, 0],
     }
 )
@@ -25,7 +25,7 @@ lmps = pd.DataFrame(
 # Create 5-minute sample LMP data
 lmps_5min = pd.DataFrame(
     {
-        "timestamp": pd.date_range("2021-01-01", periods=24 * 12, freq="5min"),
+        "timestamp": pd.date_range("2021-01-01", periods=24 * 12, freq="5min", tz="UTC"),
         "price": [
             10,
             20,

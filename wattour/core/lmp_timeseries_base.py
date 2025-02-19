@@ -16,7 +16,7 @@ from .lmp import LMP
 
 class LMPDataFrame(pa.DataFrameModel):
     price: Series
-    timestamp: Series[pd.Timestamp]
+    timestamp: Series[pd.DatetimeTZDtype(unit="ns", tz="UTC")]
 
     # temporary, until decide float or int
     @pa.check("price")

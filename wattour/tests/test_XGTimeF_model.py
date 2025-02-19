@@ -4,7 +4,7 @@ from wattour.core.lmp import LMP
 from wattour.core.lmp_timeseries_base import LMPTimeseriesBase
 from wattour.forecasting.internal import XGBTimeFeaturesRegressor
 
-input_df = pd.DataFrame({"timestamp": pd.date_range(start="2023-01-01", periods=24, freq="H")})
+input_df = pd.DataFrame({"timestamp": pd.date_range(start="2023-01-01", periods=24, freq="H", tz="UTC")})
 
 
 def main():

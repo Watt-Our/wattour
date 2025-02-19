@@ -18,7 +18,7 @@ from wattour.forecasting.internal.forecasting_model_base import ForecastingModel
 # base class for forecasting XGBoost regressor models
 class XGBRegressorBase(ForecastingModelBase):
     class InputDataframe(pa.DataFrameModel):
-        timestamp: Series[pd.Timestamp]
+        timestamp: Series[pd.DatetimeTZDtype(unit="ns", tz="UTC")]
 
     def __init__(self, num_folds: int, y_col: str = "price"):
         self.num_folds = num_folds
