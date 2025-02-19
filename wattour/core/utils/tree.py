@@ -74,6 +74,27 @@ class Tree(Generic[V]):
 
         self.size += 1
 
+    def copy(self) -> Self:
+        new_tree = type(self)()
+
+        def copy_helper(old_node: V) -> V:
+            new_children = []
+            for child in old_node.next:
+                new_children.append(copy_helper(child))
+            old_node_attrs = vars(old_node).copy()
+            old_node_attrs.pop("next", None)
+            old_node_attrs.pop("id", None)
+            new_node = type(old_node)(**old_node_attrs)
+            new_node.next = new_children
+            return new_node
+
+        new_head = copy_helper(self.head)
+        new_tree.head = new_head
+        new_tree.size = self.size
+        new_tree.branches = self.branches
+        new_tree.dummy_nodes = self.dummy_nodes
+        return new_tree
+
     def append_dummy(self, existing_node: V, dummy_node: V):
         if not dummy_node.is_dummy:
             raise ValueError("new_node must have is_dummy=True")

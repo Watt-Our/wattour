@@ -21,6 +21,10 @@ def main():
 
     print(tree)
     tree.plot()
+    copy = tree.copy()
+    print(copy)
+    copy.plot()
+
 
 
 if __name__ == "__main__":
