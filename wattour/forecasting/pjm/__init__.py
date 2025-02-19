@@ -1,1 +1,1 @@
-from pjm import get_latest_price, get_node_fivemin
+from .pjm import get_latest_price, get_node_fivemin
