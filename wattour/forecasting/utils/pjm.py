@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 import time
@@ -117,3 +118,9 @@ def get_node_fivemin(pnode_id: str) -> pd.DataFrame:
         raise PJMError("No data received for given node.")
 
     return df
+
+
+# TODO: this function should get the latest available (unverified) lmp price for a given node
+# and return a tuple with (datetime, price)
+def get_latest_price(pnode_id: str):
+    return datetime.now(), 0.0
