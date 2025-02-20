@@ -108,7 +108,7 @@ def get_node_fivemin(pnode_id: str) -> pd.DataFrame:
 
 # TODO: this function should get the latest available (unverified) lmp price for a given node
 # and return a tuple with (datetime, price) with datetime in UTC
-def get_latest_price(pnode_id: str):
+def get_latest_price(pnode_id: str) -> tuple[pd.Timestamp, float]:
     """Somehting."""
     base_req_url = f"{PJM_API}/rt_unverified_fivemin_lmps"
 
@@ -126,7 +126,6 @@ def get_latest_price(pnode_id: str):
         logging.exception("Failed to get data from PJM")
         return None
 
-    print(df.head())
     last = df.iloc[0]
     last_timestamp = last["datetime_beginning_utc"]
     last_timestamp = pd.to_datetime(last_timestamp).tz_localize("UTC")
