@@ -114,11 +114,24 @@ def get_latest_price(pnode_id: str):
 
     fields = "congestion_price_rt,datetime_beginning_ept,datetime_beginning_utc,marginal_loss_price_rt,occ_check,pnode_id,pnode_name,ref_caseid_used_multi_interval,total_lmp_rt,type"  # noqa: E501
 
-    # note: Today returns the current time (rounded down to nearest 5) but CurrentHour returns top of the hour (xx:55)
-    params = {"download": False, "pnode_id": pnode_id, "datetime_beginning_utc": "CurrentHour", "fields": fields}
-    df = get_pjm(base_req_url, params)
-    last = df.iloc[-1]
-    return last["datetime_beginning_utc"], last["total_lmp_rt"]
+    # note: for some reason using "today" or "5MinutesAgo" uses the system time... which doesn't work with UTC
+    # so do this instead:
+    now = pd.Timestamp.utcnow()
+    thirty_minutes_ago = now - pd.Timedelta(minutes=10)
+    time_range = f"{thirty_minutes_ago.strftime('%Y-%m-%d %H:%M')} to {now.strftime('%Y-%m-%d %H:%M')}"
+    params = {"download": False, "pnode_id": pnode_id, "datetime_beginning_utc": time_range, "fields": fields}
+    try:
+        df = get_pjm(base_req_url, params)
+    except PJMError:
+        logging.exception("Failed to get data from PJM")
+        return None
+
+    print(df.head())
+    last = df.iloc[0]
+    last_timestamp = last["datetime_beginning_utc"]
+    last_timestamp = pd.to_datetime(last_timestamp).tz_localize("UTC")
+
+    return last_timestamp, last["total_lmp_rt"]
 
 
 # https://github.com/gridstatus/gridstatus/blob/main/gridstatus/decorators.py
