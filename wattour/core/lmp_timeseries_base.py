@@ -34,6 +34,52 @@ class LMPTimeseriesBase(Tree[LMP]):
     def __init__(self) -> None:
         super().__init__()
 
+    def serialize(self) -> dict:
+        """Serialize the timeseries to a dictionary."""
+        if self.head is None:
+            raise ValueError("Timeseries is empty")
+
+        def serialize_node(node: LMP) -> dict:
+            return {
+                "timestamp": node.timestamp.isoformat(),
+                "price": node.price,
+                "coefficient": node.coefficient,
+                "elapsed_time": node.elapsed_time.total_seconds() if node.elapsed_time else None,
+                "is_dummy": node.dummy,
+                "children": [serialize_node(child) for child in node.next],
+            }
+
+        return {
+            "nodes": serialize_node(self.head),
+            "branches": self.branches,
+            "size": self.size,
+            "dummies": self.dummy_nodes,
+        }
+
+    @classmethod
+    def deserialize(cls, data: dict) -> Self:
+        """Deserialize the timeseries from a dictionary."""
+
+        def deserialize_node(node_data: dict) -> LMP:
+            node = LMP(
+                timestamp=pd.Timestamp(node_data["timestamp"]),
+                price=node_data["price"],
+                coefficient=node_data.get("coefficient"),
+                elapsed_time=datetime.timedelta(seconds=node_data["elapsed_time"])
+                if node_data["elapsed_time"]
+                else None,
+                is_dummy=node_data["is_dummy"],
+            )
+            node.next = [deserialize_node(child) for child in node_data["children"]]
+            return node
+
+        instance = cls()
+        instance.size = data["size"]
+        instance.branches = data["branches"]
+        instance.dummy_nodes = data["dummies"]
+        instance.head = deserialize_node(data["nodes"])
+        return instance
+
     def create_branch_from_df(
         self, lmp_df: pd.DataFrame, add_dummy: bool = True, on_node: Optional[LMP] = None
     ) -> Self:
